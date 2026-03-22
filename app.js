@@ -1,11 +1,5 @@
 'use strict';
 
-const YT_API_KEY = 'AIzaSyAobQFctI2Iq57Ty-059vbbb8O5syteZM4';
-const YT_SEARCH_ENDPOINT = 'https://www.googleapis.com/youtube/v3/search';
-
-let currentUser = null, ytPlayer = null, currentPage = 'search';
-let activePlaylistId = null, pendingSong = null;
-const songStore = {};
 const $ = id => document.getElementById(id);
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -19,6 +13,10 @@ function saveFavorites(f) { updateUser(currentUser,{favorites:f}); }
 function getPlaylists() { return getUser(currentUser)?.playlists||[]; }
 function savePlaylists(p) { updateUser(currentUser,{playlists:p}); }
 function isFav(id) { return getFavorites().some(f=>f.videoId===id); }
+
+let currentUser = null, ytPlayer = null, currentPage = 'search';
+let activePlaylistId = null, pendingSong = null;
+const songStore = {};
 
 let authMode = 'login';
 function switchTab(mode) {
@@ -101,16 +99,9 @@ async function searchYouTube() {
   const grid = $('search-results');
   grid.innerHTML = '<div class="loading-state">Searching…</div>';
   try {
-    const url = new URL(YT_SEARCH_ENDPOINT);
-    url.searchParams.set('part','snippet');
-    url.searchParams.set('type','video');
-    url.searchParams.set('videoCategoryId','10');
-    url.searchParams.set('q', query);
-    url.searchParams.set('maxResults','20');
-    url.searchParams.set('key', YT_API_KEY);
-    const res = await fetch(url.toString());
+    const res = await fetch('/api/search?q=' + encodeURIComponent(query));
     const data = await res.json();
-    if (data.error) { grid.innerHTML = '<div class="empty-state"><h3>API Error</h3><p>'+esc(data.error.message)+'</p></div>'; return; }
+    if (data.error) { grid.innerHTML = '<div class="empty-state"><h3>API Error</h3><p>'+esc(data.error.message||data.error)+'</p></div>'; return; }
     const items = data.items || [];
     if (!items.length) { grid.innerHTML = '<div class="empty-state"><h3>No results</h3><p>Try a different search.</p></div>'; return; }
     const songs = items.map(item => ({
@@ -122,7 +113,7 @@ async function searchYouTube() {
     grid.innerHTML = songs.map(s => songCard(s,{fav:true,pl:true})).join('');
   } catch(err) {
     console.error(err);
-    grid.innerHTML = '<div class="empty-state"><h3>Network error</h3><p>Could not reach YouTube API.</p></div>';
+    grid.innerHTML = '<div class="empty-state"><h3>Network error</h3><p>Could not reach the search API.</p></div>';
   }
 }
 
@@ -268,4 +259,4 @@ function navigate(page) {
   document.querySelector('[data-page="'+page+'"]').classList.add('active');
   if (page==='favorites') renderFavorites();
   if (page==='playlists') { renderPlaylists(); $('playlists-list-view').classList.remove('hidden'); $('playlist-detail-view').classList.add('hidden'); }
-}
+                                                                       }
