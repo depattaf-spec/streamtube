@@ -29,16 +29,19 @@ html, body {
   color: var(--text);
   font-size: 14px;
   line-height: 1.5;
-  overflow: hidden;
 }
+body.app-active { overflow: hidden; }
 
 /* ─── Auth Screen ──────────────────────────────────────────────── */
 #auth-screen {
+  d#auth-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  background: radial-gradient(ellipse at 40% 30%, #1a2e1a 0%, var(--bg) 70%);
+  min-height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 40px 0;ial-gradient(ellipse at 40% 30%, #1a2e1a 0%, var(--bg) 70%);
 }
 
 .auth-card {
