@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamTube</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="auth-screen">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">♪</div>
+        <h1>StreamTube</h1>
+        <p>Your music, powered by YouTube</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+      <form id="auth-form" autocomplete="off">
+        <div id="field-name" class="form-group hidden">
+          <label for="auth-name">Name</label>
+          <input type="text" id="auth-name" placeholder="Your display name" />
+        </div>
+        <div class="form-group">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" placeholder="Enter username" required />
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" placeholder="Enter password" required />
+        </div>
+        <p id="auth-error" class="error-msg"></p>
+        <button type="submit" class="btn-primary full-width" id="auth-submit">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <nav id="sidebar">
+      <div class="sidebar-brand"><span class="brand-icon">♪</span><span class="brand-name">StreamTube</span></div>
+      <ul class="nav-list">
+        <li><a href="#" class="nav-link active" data-page="search" onclick="navigate('search'); return false;"><span class="nav-icon">🔍</span> Search</a></li>
+        <li><a href="#" class="nav-link" data-page="favorites" onclick="navigate('favorites'); return false;"><span class="nav-icon">❤️</span> Favorites</a></li>
+        <li><a href="#" class="nav-link" data-page="playlists" onclick="navigate('playlists'); return false;"><span class="nav-icon">📋</span> Playlists</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-info"><span class="user-avatar">👤</span><span id="user-display-name">User</span></div>
+        <button class="btn-logout" onclick="logout()">Sign out</button>
+      </div>
+    </nav>
+    <main id="content">
+      <div id="page-search" class="page">
+        <div class="page-header"><div class="search-bar"><input type="text" id="search-input" placeholder="Search for songs, artists, albums..." onkeydown="if(event.key==='Enter') searchYouTube()" /><button class="btn-search" onclick="searchYouTube()">Search</button></div></div>
+        <div id="search-results" class="song-grid"></div>
+      </div>
+      <div id="page-favorites" class="page hidden"><div class="page-header"><h2>❤️ Favorites</h2></div><div id="favorites-grid" class="song-grid"></div></div>
+      <div id="page-playlists" class="page hidden">
+        <div id="playlists-list-view">
+          <div class="page-header playlists-header"><h2>📋 Playlists</h2><button class="btn-primary" onclick="toggleCreateForm()">+ New Playlist</button></div>
+          <div id="create-playlist-form" class="create-form hidden"><input type="text" id="new-playlist-name" placeholder="Playlist name..." /><button class="btn-primary" onclick="createPlaylist()">Create</button><button class="btn-secondary" onclick="toggleCreateForm()">Cancel</button></div>
+          <div id="playlists-container"></div>
+        </div>
+        <div id="playlist-detail-view" class="hidden">
+          <div class="page-header"><button class="btn-back" onclick="backToPlaylists()">← Back to Playlists</button><h2 id="detail-playlist-name"></h2></div>
+          <div id="playlist-songs-grid" class="song-grid"></div>
+        </div>
+      </div>
+    </main>
+    <div id="player-bar">
+      <div id="now-playing"><img id="now-thumb" src="" alt="" /><div id="now-info"><p id="now-title">Nothing playing</p><p id="now-channel" class="now-channel"></p></div></div>
+      <div id="yt-player-wrapper"><div id="youtube-player"></div></div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)"><div class="modal"><h3>Add to Playlist</h3><div id="modal-playlist-list"></div><button class="btn-secondary full-width" style="margin-top:12px" onclick="closeModal()">Cancel</button></div></div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
