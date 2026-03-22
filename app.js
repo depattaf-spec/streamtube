@@ -161,7 +161,7 @@ function onYouTubeIframeAPIReady() {
   ytReady = true;
   ytPlayer = new YT.Player('yt-player', {
     height: '72', width: '128', videoId: '',
-    playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0 },
+    playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, origin: window.location.origin },
     events: { onStateChange: onPlayerStateChange, onReady: function() {} }
   });
 }
