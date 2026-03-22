@@ -8,76 +8,152 @@
 </head>
 <body>
 
-  <div id="auth-screen">
-    <div class="auth-container">
-      <div class="auth-logo">
-        <div class="auth-logo-icon">♪</div>
-        <h1>StreamTube</h1>
-        <p>Your music, powered by YouTube</p>
-      </div>
-      <div class="auth-tabs">
-        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Login</button>
-        <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
-      </div>
-      <form id="auth-form" autocomplete="off">
-        <div id="field-name" class="form-group hidden">
-          <label for="auth-name">Name</label>
-          <input type="text" id="auth-name" placeholder="Your display name" />
-        </div>
-        <div class="form-group">
-          <label for="auth-username">Username</label>
-          <input type="text" id="auth-username" placeholder="Enter username" required />
-        </div>
-        <div class="form-group">
-          <label for="auth-password">Password</label>
-          <input type="password" id="auth-password" placeholder="Enter password" required />
-        </div>
-        <p id="auth-error" class="error-msg"></p>
-        <button type="submit" class="btn-primary full-width" id="auth-submit">Login</button>
-      </form>
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">♫ StreamTube</div>
+    <div class="auth-tabs">
+      <button id="login-tab" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button id="signup-tab" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <div id="login-form" class="auth-form">
+      <input id="login-email" type="email" placeholder="Email" />
+      <input id="login-pass" type="password" placeholder="Password" />
+      <p id="login-error" class="form-error"></p>
+      <button class="btn btn-green btn-full" onclick="login()">Sign In</button>
+    </div>
+    <div id="signup-form" class="auth-form" style="display:none">
+      <input id="signup-email" type="email" placeholder="Email" />
+      <input id="signup-pass" type="password" placeholder="Password" />
+      <p id="signup-error" class="form-error"></p>
+      <button class="btn btn-green btn-full" onclick="signup()">Create Account</button>
     </div>
   </div>
+</div>
 
-  <div id="app" class="hidden">
-    <nav id="sidebar">
-      <div class="sidebar-brand"><span class="brand-icon">♪</span><span class="brand-name">StreamTube</span></div>
-      <ul class="nav-list">
-        <li><a href="#" class="nav-link active" data-page="search" onclick="navigate('search'); return false;"><span class="nav-icon">🔍</span> Search</a></li>
-        <li><a href="#" class="nav-link" data-page="favorites" onclick="navigate('favorites'); return false;"><span class="nav-icon">❤️</span> Favorites</a></li>
-        <li><a href="#" class="nav-link" data-page="playlists" onclick="navigate('playlists'); return false;"><span class="nav-icon">📋</span> Playlists</a></li>
-      </ul>
-      <div class="sidebar-footer">
-        <div class="user-info"><span class="user-avatar">👤</span><span id="user-display-name">User</span></div>
-        <button class="btn-logout" onclick="logout()">Sign out</button>
+<!-- APP SCREEN -->
+<div id="app-screen" style="display:none">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">♫ StreamTube</div>
+    <ul class="nav-list">
+      <li id="home-tab" class="nav-item" onclick="switchTab('home')">
+        <span class="nav-icon">🏠</span> Home
+      </li>
+      <li id="search-tab" class="nav-item" onclick="switchTab('search')">
+        <span class="nav-icon">🔍</span> Search
+      </li>
+      <li id="favorites-tab" class="nav-item" onclick="switchTab('favorites')">
+        <span class="nav-icon">❤️</span> Favorites
+      </li>
+      <li id="playlists-tab" class="nav-item" onclick="switchTab('playlists')">
+        <span class="nav-icon">📋</span> Playlists
+      </li>
+    </ul>
+    <div class="sidebar-user">
+      <span class="user-icon">👤</span>
+      <span id="user-email" class="user-email-text"></span>
+      <button class="btn-signout" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main-content">
+
+    <!-- HOME VIEW -->
+    <div id="home-view">
+      <div class="view-header"><h1>Good listening 🎵</h1></div>
+      <div class="home-section" id="recently-played-section" style="display:none">
+        <h2 class="section-title">Recently Played</h2>
+        <div id="recently-played-container" class="recents-row"></div>
       </div>
-    </nav>
-    <main id="content">
-      <div id="page-search" class="page">
-        <div class="page-header"><div class="search-bar"><input type="text" id="search-input" placeholder="Search for songs, artists, albums..." onkeydown="if(event.key==='Enter') searchYouTube()" /><button class="btn-search" onclick="searchYouTube()">Search</button></div></div>
-        <div id="search-results" class="song-grid"></div>
+      <div class="home-section" id="recommendations-section" style="display:none">
+        <h2 class="section-title">Recommended For You</h2>
+        <div id="recommendations-container" class="songs-grid"></div>
       </div>
-      <div id="page-favorites" class="page hidden"><div class="page-header"><h2>❤️ Favorites</h2></div><div id="favorites-grid" class="song-grid"></div></div>
-      <div id="page-playlists" class="page hidden">
-        <div id="playlists-list-view">
-          <div class="page-header playlists-header"><h2>📋 Playlists</h2><button class="btn-primary" onclick="toggleCreateForm()">+ New Playlist</button></div>
-          <div id="create-playlist-form" class="create-form hidden"><input type="text" id="new-playlist-name" placeholder="Playlist name..." /><button class="btn-primary" onclick="createPlaylist()">Create</button><button class="btn-secondary" onclick="toggleCreateForm()">Cancel</button></div>
-          <div id="playlists-container"></div>
-        </div>
-        <div id="playlist-detail-view" class="hidden">
-          <div class="page-header"><button class="btn-back" onclick="backToPlaylists()">← Back to Playlists</button><h2 id="detail-playlist-name"></h2></div>
-          <div id="playlist-songs-grid" class="song-grid"></div>
-        </div>
+      <div class="home-section">
+        <h2 class="section-title">Featured Collections</h2>
+        <div id="featured-container"></div>
       </div>
-    </main>
-    <div id="player-bar">
-      <div id="now-playing"><img id="now-thumb" src="" alt="" /><div id="now-info"><p id="now-title">Nothing playing</p><p id="now-channel" class="now-channel"></p></div></div>
-      <div id="yt-player-wrapper"><div id="youtube-player"></div></div>
+    </div>
+
+    <!-- SEARCH VIEW -->
+    <div id="search-view" style="display:none">
+      <div class="search-bar-wrap">
+        <input id="search-input" class="search-input" placeholder="Search for songs, artists, albums…"
+          onkeydown="if(event.key==='Enter') searchYouTube()" />
+        <button class="btn btn-green" onclick="searchYouTube()">Search</button>
+      </div>
+      <div id="search-results"></div>
+      <div id="search-suggestions"></div>
+    </div>
+
+    <!-- FAVORITES VIEW -->
+    <div id="favorites-view" style="display:none">
+      <div class="view-header"><h1>❤️ Favorites</h1></div>
+      <div id="favorites-container"></div>
+    </div>
+
+    <!-- PLAYLISTS VIEW -->
+    <div id="playlists-view" style="display:none">
+      <div class="view-header"><h1>📋 Playlists</h1></div>
+      <div id="playlists-container"></div>
+    </div>
+
+    <!-- PLAYLIST DETAIL VIEW -->
+    <div id="playlist-detail-view" style="display:none"></div>
+
+  </main>
+
+  <!-- QUEUE PANEL -->
+  <aside id="queue-panel">
+    <div class="queue-header">
+      <span>Up Next</span>
+      <button class="queue-close" onclick="toggleQueuePanel()">✕</button>
+    </div>
+    <div id="queue-list"></div>
+  </aside>
+
+</div>
+
+<!-- PLAYER BAR -->
+<div id="player-bar" style="display:none">
+  <div class="player-info">
+    <img id="player-thumb" src="" alt="" />
+    <div class="player-text">
+      <div id="player-title" class="player-title">Nothing playing</div>
+      <div id="player-channel" class="player-channel"></div>
+    </div>
+    <button class="btn-fav-player" id="player-fav-btn" onclick="favCurrentSong()" title="Add to favorites">♡</button>
+  </div>
+  <div class="player-center">
+    <div class="control-row">
+      <button id="shuffle-btn" class="ctrl-btn" onclick="toggleShuffle()" title="Shuffle">🔀</button>
+      <button class="ctrl-btn" onclick="advanceQueue(-1)" title="Previous">⏮</button>
+      <button id="play-pause-btn" class="ctrl-btn ctrl-play" onclick="togglePlayPause()">▶</button>
+      <button class="ctrl-btn" onclick="advanceQueue(1)" title="Next">⏭</button>
+      <button id="repeat-btn" class="ctrl-btn" onclick="toggleRepeat()" title="Repeat: Off">🔁</button>
+    </div>
+    <div class="progress-row">
+      <span id="time-current" class="time-label">0:00</span>
+      <div id="progress-bar" onclick="seekTo(event)">
+        <div id="progress-fill"></div>
+      </div>
+      <span id="time-total" class="time-label">0:00</span>
     </div>
   </div>
+  <div class="player-right">
+    <div id="yt-player"></div>
+    <button class="btn-queue-toggle" onclick="toggleQueuePanel()" title="Queue">☰</button>
+  </div>
+</div>
 
-  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)"><div class="modal"><h3>Add to Playlist</h3><div id="modal-playlist-list"></div><button class="btn-secondary full-width" style="margin-top:12px" onclick="closeModal()">Cancel</button></div></div>
-  <div id="toast" class="toast hidden"></div>
-  <script src="app.js"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
+<!-- MODALS -->
+<div id="playlist-modal" class="modal-overlay" onclick="closeModal()" style="display:none"></div>
+<div id="toast" class="toast"></div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="app.js"></script>
 </body>
 </html>
