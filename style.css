@@ -34,14 +34,13 @@ body.app-active { overflow: hidden; }
 
 /* ─── Auth Screen ──────────────────────────────────────────────── */
 #auth-screen {
-  d#auth-screen {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 40px 0;ial-gradient(ellipse at 40% 30%, #1a2e1a 0%, var(--bg) 70%);
+  background: radial-gradient(ellipse at 40% 30%, #1a2e1a 0%, var(--bg) 70%);
 }
 
 .auth-card {
@@ -851,7 +850,8 @@ body.app-active { overflow: hidden; }
   }
 
   /* ── Body / Layout ── */
-  html, body { overflow: hidden; font-size: 15px; }
+  html, body { font-size: 15px; }
+  body.app-active { overflow: hidden; }
 
   /* ── Auth screen ── */
   .auth-card {
