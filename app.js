@@ -2,7 +2,6 @@
 // StreamTube v2.0 — app.js
 // ================================================================
 
-// ─── State ──────────────────────────────────────────────────────
 var currentUser = null;
 var ytPlayer = null;
 var ytReady = false;
@@ -13,7 +12,6 @@ var shuffleMode = false;
 var repeatMode = 'none';
 var progressInterval = null;
 
-// ─── Utils ──────────────────────────────────────────────────────
 function $(id) { return document.getElementById(id); }
 
 function esc(s) {
@@ -52,7 +50,7 @@ function showToast(msg) {
   setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
-// ─── Auth ───────────────────────────────────────────────────────
+// Auth
 function getUsers() {
   try { return JSON.parse(localStorage.getItem('st_users') || '{}'); }
   catch(e) { return {}; }
@@ -120,7 +118,7 @@ function saveUserData(data) {
   saveUsers(users);
 }
 
-// ─── View Switching ─────────────────────────────────────────────
+// Views
 function showAuth() {
   $('auth-screen').style.display = 'flex';
   $('app-screen').style.display = 'none';
@@ -134,15 +132,13 @@ function showApp() {
 }
 
 function switchTab(tab) {
-  var tabs = ['home', 'search', 'favorites', 'playlists'];
-  tabs.forEach(function(t) {
+  ['home','search','favorites','playlists'].forEach(function(t) {
     var el = $(t + '-tab');
     if (el) el.classList.remove('active');
   });
   var activeTab = $(tab + '-tab');
   if (activeTab) activeTab.classList.add('active');
-  var views = ['home-view', 'search-view', 'favorites-view', 'playlists-view', 'playlist-detail-view'];
-  views.forEach(function(v) {
+  ['home-view','search-view','favorites-view','playlists-view','playlist-detail-view'].forEach(function(v) {
     var el = $(v);
     if (el) el.style.display = 'none';
   });
@@ -160,18 +156,13 @@ function switchAuthTab(tab) {
   $('signup-form').style.display = tab === 'signup' ? 'flex' : 'none';
 }
 
-// ─── YouTube Player ─────────────────────────────────────────────
+// YouTube Player
 function onYouTubeIframeAPIReady() {
   ytReady = true;
   ytPlayer = new YT.Player('yt-player', {
-    height: '72',
-    width: '128',
-    videoId: '',
+    height: '72', width: '128', videoId: '',
     playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0 },
-    events: {
-      onStateChange: onPlayerStateChange,
-      onReady: function() {}
-    }
+    events: { onStateChange: onPlayerStateChange, onReady: function() {} }
   });
 }
 
@@ -187,11 +178,7 @@ function onPlayerStateChange(event) {
 }
 
 function handleSongEnd() {
-  if (repeatMode === 'one') {
-    ytPlayer.seekTo(0);
-    ytPlayer.playVideo();
-    return;
-  }
+  if (repeatMode === 'one') { ytPlayer.seekTo(0); ytPlayer.playVideo(); return; }
   advanceQueue(1);
 }
 
@@ -213,15 +200,12 @@ function seekTo(e) {
   var bar = $('progress-bar');
   var rect = bar.getBoundingClientRect();
   var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  if (ytPlayer && ytPlayer.getDuration) {
-    ytPlayer.seekTo(pct * ytPlayer.getDuration(), true);
-  }
+  if (ytPlayer && ytPlayer.getDuration) ytPlayer.seekTo(pct * ytPlayer.getDuration(), true);
 }
 
 function togglePlayPause() {
   if (!ytPlayer) return;
-  var state = ytPlayer.getPlayerState();
-  if (state === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+  if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
   else ytPlayer.playVideo();
 }
 
@@ -232,7 +216,7 @@ function toggleShuffle() {
 }
 
 function toggleRepeat() {
-  var modes = ['none', 'one', 'all'];
+  var modes = ['none','one','all'];
   repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
   var btn = $('repeat-btn');
   btn.classList.toggle('active', repeatMode !== 'none');
@@ -288,27 +272,25 @@ function addToRecentlyPlayed(meta) {
   try { recent = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) {}
   recent = recent.filter(function(s) { return s.videoId !== meta.videoId; });
   recent.unshift(meta);
-  recent = recent.slice(0, 20);
-  localStorage.setItem(key, JSON.stringify(recent));
+  localStorage.setItem(key, JSON.stringify(recent.slice(0, 20)));
 }
 
 function favCurrentSong() {
   if (currentSong) { addFavorite(currentSong); $('player-fav-btn').textContent = '\u2665'; }
 }
 
-// ─── Queue Panel ────────────────────────────────────────────────
+// Queue Panel
 function renderQueueList() {
   var list = $('queue-list');
   if (!list) return;
   if (!queue.length) { list.innerHTML = '<div class="queue-empty">Queue is empty</div>'; return; }
   list.innerHTML = queue.map(function(s, i) {
-    var active = i === queueIndex ? ' queue-item-active' : '';
-    return '<div class="queue-item' + active + '" onclick="queueJump(' + i + ')">' +
+    var cls = 'queue-item' + (i === queueIndex ? ' queue-item-active' : '');
+    return '<div class="' + cls + '" onclick="queueJump(' + i + ')">' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
       '<div class="queue-item-info">' +
       '<div class="queue-item-title">' + esc(s.title) + '</div>' +
-      '<div class="queue-item-ch">' + esc(s.channel) + '</div>' +
-      '</div>' +
+      '<div class="queue-item-ch">' + esc(s.channel) + '</div></div>' +
       (i === queueIndex ? '<span class="now-badge">NOW</span>' : '') +
       '</div>';
   }).join('');
@@ -317,7 +299,7 @@ function renderQueueList() {
 function queueJump(i) { queueIndex = i; playSong(queue[i]); }
 function toggleQueuePanel() { $('queue-panel').classList.toggle('open'); }
 
-// ─── Home / Featured ────────────────────────────────────────────
+// Home
 var FEATURED_CATEGORIES = [
   { label: 'Top Hits 2024', query: 'top hits 2024' },
   { label: 'Chill Vibes', query: 'chill vibes music' },
@@ -337,16 +319,14 @@ function loadFeaturedCollections() {
   var container = $('featured-container');
   if (!container) return;
   container.innerHTML = FEATURED_CATEGORIES.map(function(c) {
-    var cardId = 'feat-' + c.query.replace(/\W+/g, '_');
-    return '<div class="featured-card" id="' + cardId + '">' +
+    var id = 'feat-' + c.query.replace(/\W+/g, '_');
+    return '<div class="featured-card" id="' + id + '">' +
       '<div class="featured-card-header">' +
       '<span class="featured-label">' + esc(c.label) + '</span>' +
       '<div class="featured-actions">' +
-      '<button class="btn btn-sm-green" onclick="playFeaturedCard(\'' + cardId + '\')">&#9654; Play All</button>' +
-      '<button class="btn btn-sm-ghost" onclick="shuffleFeaturedCard(\'' + cardId + '\')">&#128256; Shuffle</button>' +
-      '</div></div>' +
-      '<div class="featured-songs-list"><div class="loading-mini">Loading\u2026</div></div>' +
-      '</div>';
+      '<button class="btn btn-sm-green" data-cid="' + esc(id) + '" onclick="playFeaturedCard(this.dataset.cid)">&#9654; Play All</button>' +
+      '<button class="btn btn-sm-ghost" data-cid="' + esc(id) + '" onclick="shuffleFeaturedCard(this.dataset.cid)">&#128256; Shuffle</button>' +
+      '</div></div><div class="featured-songs-list"><div class="loading-mini">Loading\u2026</div></div></div>';
   }).join('');
   FEATURED_CATEGORIES.forEach(function(c) {
     fetchFeaturedCategory(c, 'feat-' + c.query.replace(/\W+/g, '_'));
@@ -360,24 +340,18 @@ function fetchFeaturedCategory(c, cardId) {
       var card = $(cardId);
       if (!card) return;
       var songs = (data.items || []).slice(0, 5).map(function(item) {
-        return {
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: item.snippet.thumbnails.default ? item.snippet.thumbnails.default.url : '',
-          channel: item.snippet.channelTitle
-        };
+        return { videoId: item.id.videoId, title: item.snippet.title,
+          thumbnail: (item.snippet.thumbnails.default || {}).url || '',
+          channel: item.snippet.channelTitle };
       });
       card.dataset.songs = JSON.stringify(songs);
-      var listEl = card.querySelector('.featured-songs-list');
-      listEl.innerHTML = songs.map(function(s, i) {
-        return '<div class="feat-row" onclick="playSong(' + safeJson(s) + ')">' +
-          '<span class="feat-num">' + (i + 1) + '</span>' +
+      card.querySelector('.featured-songs-list').innerHTML = songs.map(function(s, i) {
+        return '<div class="feat-row" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">' +
+          '<span class="feat-num">' + (i+1) + '</span>' +
           '<img src="' + esc(s.thumbnail) + '" alt="">' +
-          '<div class="feat-info">' +
-          '<div class="feat-title">' + esc(s.title) + '</div>' +
-          '<div class="feat-ch">' + esc(s.channel) + '</div>' +
-          '</div>' +
-          '<button class="feat-add-fav" onclick="event.stopPropagation();addFavorite(' + safeJson(s) + ')" title="Add to favorites">&#9825;</button>' +
+          '<div class="feat-info"><div class="feat-title">' + esc(s.title) + '</div>' +
+          '<div class="feat-ch">' + esc(s.channel) + '</div></div>' +
+          '<button class="feat-add-fav" data-song="' + safeJson(s) + '" onclick="event.stopPropagation();addFavorite(JSON.parse(decodeURIComponent(this.dataset.song)))" title="Add to favorites">&#9825;</button>' +
           '</div>';
       }).join('');
     })
@@ -413,7 +387,7 @@ function renderRecentlyPlayed() {
   if (!recent.length) { section.style.display = 'none'; return; }
   section.style.display = '';
   container.innerHTML = recent.slice(0, 10).map(function(s) {
-    return '<div class="recent-card" onclick="playSong(' + safeJson(s) + ')">' +
+    return '<div class="recent-card" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
       '<div class="recent-title">' + esc(s.title) + '</div></div>';
   }).join('');
@@ -429,8 +403,7 @@ function renderRecommendations() {
   var pool = ud.favorites.concat(recent).slice(0, 8);
   if (!pool.length) { section.style.display = 'none'; return; }
   section.style.display = '';
-  var allWords = pool.map(function(s) { return s.title || ''; }).join(' ');
-  var words = allWords.split(/\W+/).filter(function(w) { return w.length > 3; });
+  var words = pool.map(function(s) { return s.title || ''; }).join(' ').split(/\W+/).filter(function(w) { return w.length > 3; });
   var unique = [];
   words.forEach(function(w) { if (unique.indexOf(w) === -1) unique.push(w); });
   var query = unique.slice(0, 4).join(' ') || 'popular music';
@@ -439,112 +412,94 @@ function renderRecommendations() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var songs = (data.items || []).slice(0, 6).map(function(item) {
-        return {
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: (item.snippet.thumbnails.medium || item.snippet.thumbnails.default || {}).url || '',
-          channel: item.snippet.channelTitle
-        };
+        return { videoId: item.id.videoId, title: item.snippet.title,
+          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
+          channel: item.snippet.channelTitle };
       });
       container.innerHTML = songs.map(function(s) { return songCard(s); }).join('');
     })
     .catch(function() { section.style.display = 'none'; });
 }
 
-// ─── Search ─────────────────────────────────────────────────────
+// Search
 var _currentResults = [];
 
 function searchYouTube() {
   var query = $('search-input').value.trim();
   if (!query) return;
-  var grid = $('search-results');
-  var sugg = $('search-suggestions');
-  grid.innerHTML = '<div class="loading-state">Searching\u2026</div>';
-  sugg.innerHTML = '';
+  $('search-results').innerHTML = '<div class="loading-state">Searching\u2026</div>';
+  $('search-suggestions').innerHTML = '';
   fetch('/api/search?q=' + encodeURIComponent(query))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.error) {
-        grid.innerHTML = '<div class="empty-state"><h3>API Error</h3><p>' + esc(data.error.message || data.error) + '</p></div>';
+        $('search-results').innerHTML = '<div class="empty-state"><h3>API Error</h3><p>' + esc(data.error.message || data.error) + '</p></div>';
         return;
       }
       var items = data.items || [];
-      if (!items.length) { grid.innerHTML = '<div class="empty-state"><h3>No results</h3><p>Try a different search.</p></div>'; return; }
+      if (!items.length) { $('search-results').innerHTML = '<div class="empty-state"><h3>No results</h3></div>'; return; }
       var songs = items.map(function(item) {
-        return {
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: (item.snippet.thumbnails.medium || item.snippet.thumbnails.default || {}).url || '',
-          channel: item.snippet.channelTitle
-        };
+        return { videoId: item.id.videoId, title: item.snippet.title,
+          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
+          channel: item.snippet.channelTitle };
       });
       _currentResults = songs;
-      grid.innerHTML = '<div class="results-header">' +
-        '<span>' + songs.length + ' results for <em>' + esc(query) + '</em></span>' +
+      $('search-results').innerHTML =
+        '<div class="results-header"><span>' + songs.length + ' results for <em>' + esc(query) + '</em></span>' +
         '<div class="results-actions">' +
         '<button class="btn btn-sm-green" onclick="playAllResults()">&#9654; Play All</button>' +
         '<button class="btn btn-sm-ghost" onclick="shuffleAllResults()">&#128256; Shuffle All</button>' +
-        '</div></div>' +
-        '<div class="songs-grid">' + songs.map(function(s) { return songCard(s); }).join('') + '</div>';
+        '</div></div><div class="songs-grid">' + songs.map(function(s) { return songCard(s); }).join('') + '</div>';
       loadSearchSuggestions(query);
     })
     .catch(function(err) {
       console.error(err);
-      grid.innerHTML = '<div class="empty-state"><h3>Network error</h3><p>Could not reach the search API.</p></div>';
+      $('search-results').innerHTML = '<div class="empty-state"><h3>Network error</h3></div>';
     });
 }
 
 function playAllResults() { if (_currentResults.length) playQueue(_currentResults, 0); }
 function shuffleAllResults() {
   if (!_currentResults.length) return;
-  var saved = shuffleMode; shuffleMode = true;
-  playQueue(_currentResults, 0);
-  shuffleMode = saved;
+  var s = shuffleMode; shuffleMode = true; playQueue(_currentResults, 0); shuffleMode = s;
 }
 
 function loadSearchSuggestions(query) {
-  var container = $('search-suggestions');
-  if (!container) return;
   fetch('/api/search?q=' + encodeURIComponent(query + ' similar songs'))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var songs = (data.items || []).slice(0, 4).map(function(item) {
-        return {
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: (item.snippet.thumbnails.medium || item.snippet.thumbnails.default || {}).url || '',
-          channel: item.snippet.channelTitle
-        };
+        return { videoId: item.id.videoId, title: item.snippet.title,
+          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
+          channel: item.snippet.channelTitle };
       });
       if (!songs.length) return;
-      container.innerHTML = '<h2 class="section-title suggestions-title">You might also like</h2>' +
+      $('search-suggestions').innerHTML =
+        '<h2 class="section-title suggestions-title">You might also like</h2>' +
         '<div class="songs-grid">' + songs.map(function(s) { return songCard(s); }).join('') + '</div>';
-    })
-    .catch(function() {});
+    }).catch(function() {});
 }
 
-// ─── Song Card ──────────────────────────────────────────────────
+// Song Card - uses data-song + JSON.parse to avoid all quoting issues
 function songCard(s) {
-  var safe = safeJson(s);
+  var ds = safeJson(s);
   return '<div class="song-card">' +
     '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
-    '<div class="card-info">' +
-    '<div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
-    '<div class="card-channel">' + esc(s.channel) + '</div>' +
-    '</div>' +
+    '<div class="card-info"><div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
+    '<div class="card-channel">' + esc(s.channel) + '</div></div>' +
     '<div class="card-actions">' +
-    '<button class="btn-card btn-card-play" onclick="playSong(' + safe + ')">&#9654; Play</button>' +
-    '<button class="btn-card btn-fav-card" onclick="addFavorite(' + safe + ')" title="Favorite">&#9825;</button>' +
-    '<button class="btn-card" onclick="showAddToPlaylist(' + safe + ')">+ List</button>' +
+    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">&#9654; Play</button>' +
+    '<button class="btn-card btn-fav-card" data-song="' + ds + '" onclick="addFavorite(JSON.parse(decodeURIComponent(this.dataset.song)))" title="Favorite">&#9825;</button>' +
+    '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(decodeURIComponent(this.dataset.song)))">+ List</button>' +
     '</div></div>';
 }
 
-// ─── Favorites ──────────────────────────────────────────────────
+// Favorites
 function addFavorite(song) {
   var ud = getUserData();
-  var exists = ud.favorites.some(function(s) { return s.videoId === song.videoId; });
-  if (!exists) { ud.favorites.unshift(song); saveUserData(ud); showToast('Added to favorites \u2665'); }
-  else showToast('Already in favorites');
+  if (!ud.favorites.some(function(s) { return s.videoId === song.videoId; })) {
+    ud.favorites.unshift(song); saveUserData(ud); showToast('Added to favorites \u2665');
+  } else { showToast('Already in favorites'); }
 }
 
 function removeFavorite(videoId) {
@@ -558,52 +513,46 @@ function renderFavorites() {
   var container = $('favorites-container');
   var ud = getUserData();
   if (!ud.favorites.length) {
-    container.innerHTML = '<div class="empty-state"><h3>\u2665 No favorites yet</h3><p>Search for songs and hit the heart icon.</p></div>';
+    container.innerHTML = '<div class="empty-state"><h3>\u2665 No favorites yet</h3><p>Search and hit the heart icon.</p></div>';
     return;
   }
-  container.innerHTML = '<div class="results-header">' +
-    '<span>' + ud.favorites.length + ' songs</span>' +
+  container.innerHTML =
+    '<div class="results-header"><span>' + ud.favorites.length + ' songs</span>' +
     '<div class="results-actions">' +
     '<button class="btn btn-sm-green" onclick="playFavorites()">&#9654; Play All</button>' +
     '<button class="btn btn-sm-ghost" onclick="shuffleFavorites()">&#128256; Shuffle</button>' +
-    '</div></div>' +
-    '<div class="songs-grid">' + ud.favorites.map(function(s) { return favCard(s); }).join('') + '</div>';
+    '</div></div><div class="songs-grid">' + ud.favorites.map(function(s) { return favCard(s); }).join('') + '</div>';
 }
 
 function favCard(s) {
-  var safe = safeJson(s);
+  var ds = safeJson(s);
   return '<div class="song-card">' +
     '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
-    '<div class="card-info">' +
-    '<div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
-    '<div class="card-channel">' + esc(s.channel) + '</div>' +
-    '</div>' +
+    '<div class="card-info"><div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
+    '<div class="card-channel">' + esc(s.channel) + '</div></div>' +
     '<div class="card-actions">' +
-    '<button class="btn-card btn-card-play" onclick="playSong(' + safe + ')">&#9654; Play</button>' +
-    '<button class="btn-card" onclick="showAddToPlaylist(' + safe + ')">+ List</button>' +
-    '<button class="btn-card btn-danger" onclick="removeFavorite(\'' + esc(s.videoId) + \')">&#10005; Remove</button>' +
+    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">&#9654; Play</button>' +
+    '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(decodeURIComponent(this.dataset.song)))">+ List</button>' +
+    '<button class="btn-card btn-danger" data-vid="' + esc(s.videoId) + '" onclick="removeFavorite(this.dataset.vid)">&#10005; Remove</button>' +
     '</div></div>';
 }
 
 function playFavorites() { var ud = getUserData(); if (ud.favorites.length) playQueue(ud.favorites, 0); }
 function shuffleFavorites() {
-  var ud = getUserData();
-  if (!ud.favorites.length) return;
-  var saved = shuffleMode; shuffleMode = true;
-  playQueue(ud.favorites, 0);
-  shuffleMode = saved;
+  var ud = getUserData(); if (!ud.favorites.length) return;
+  var s = shuffleMode; shuffleMode = true; playQueue(ud.favorites, 0); shuffleMode = s;
 }
 
-// ─── Playlists ──────────────────────────────────────────────────
+// Playlists
 function renderPlaylists() {
   var container = $('playlists-container');
   var ud = getUserData();
   var cardsHtml = ud.playlists.length
     ? ud.playlists.map(function(pl, i) { return playlistCard(pl, i); }).join('')
-    : '<div class="empty-state"><h3>No playlists yet</h3><p>Create your first playlist above.</p></div>';
+    : '<div class="empty-state"><h3>No playlists yet</h3></div>';
   container.innerHTML =
     '<div class="create-playlist-bar">' +
-    '<input id="new-pl-name" class="pl-name-input" placeholder="Playlist name\u2026" onkeydown="if(event.key===\'Enter\')createPlaylist()" />' +
+    '<input id="new-pl-name" class="pl-name-input" placeholder="Playlist name\u2026" onkeydown="if(event.key===&quot;Enter&quot;)createPlaylist()" />' +
     '<button class="btn btn-green" onclick="createPlaylist()">+ Create</button>' +
     '</div><div class="playlists-grid">' + cardsHtml + '</div>';
 }
@@ -631,16 +580,14 @@ function createPlaylist() {
   saveUserData(ud);
   $('new-pl-name').value = '';
   renderPlaylists();
-  showToast('Playlist "' + name + '" created');
+  showToast('Playlist created');
 }
 
 function deletePlaylist(i) {
   var ud = getUserData();
-  var name = ud.playlists[i].name;
   ud.playlists.splice(i, 1);
   saveUserData(ud);
   renderPlaylists();
-  showToast('"' + name + '" deleted');
 }
 
 function viewPlaylist(i) {
@@ -654,27 +601,26 @@ function viewPlaylist(i) {
   detail.style.display = '';
   var songsHtml = pl.songs && pl.songs.length
     ? pl.songs.map(function(s, j) {
-        var safe = safeJson(s);
+        var ds = safeJson(s);
         return '<div class="song-card">' +
           '<span class="pl-song-num">' + (j+1) + '</span>' +
           '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
           '<div class="card-info"><div class="card-title">' + esc(s.title) + '</div>' +
           '<div class="card-channel">' + esc(s.channel) + '</div></div>' +
           '<div class="card-actions">' +
-          '<button class="btn-card btn-card-play" onclick="playSong(' + safe + ')">&#9654; Play</button>' +
+          '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">&#9654; Play</button>' +
           '<button class="btn-card btn-danger" onclick="removeSongFromPlaylist(' + i + ',' + j + ')">&#10005;</button>' +
           '</div></div>';
       }).join('')
-    : '<div class="empty-state"><h3>Empty playlist</h3><p>Add songs using the "+List" button on any song.</p></div>';
+    : '<div class="empty-state"><h3>Empty playlist</h3><p>Add songs using &quot;+ List&quot;.</p></div>';
   detail.innerHTML =
     '<div class="detail-header">' +
-    '<button class="btn-back" onclick="switchTab(\'playlists\')">&#8592; Playlists</button>' +
+    '<button class="btn-back" onclick="switchTab(&quot;playlists&quot;)">&#8592; Playlists</button>' +
     '<h2>' + esc(pl.name) + '</h2>' +
     '<div class="detail-actions">' +
     '<button class="btn btn-sm-green" onclick="playPlaylist(' + i + ')">&#9654; Play All</button>' +
     '<button class="btn btn-sm-ghost" onclick="shufflePlaylist(' + i + ')">&#128256; Shuffle</button>' +
-    '</div></div>' +
-    '<div class="songs-grid">' + songsHtml + '</div>';
+    '</div></div><div class="songs-grid">' + songsHtml + '</div>';
 }
 
 function playPlaylist(i) {
@@ -684,18 +630,16 @@ function playPlaylist(i) {
 function shufflePlaylist(i) {
   var ud = getUserData(); var pl = ud.playlists[i];
   if (!pl || !pl.songs || !pl.songs.length) return;
-  var saved = shuffleMode; shuffleMode = true;
-  playQueue(pl.songs, 0);
-  shuffleMode = saved;
+  var s = shuffleMode; shuffleMode = true; playQueue(pl.songs, 0); shuffleMode = s;
 }
-function removeSongFromPlaylist(plIndex, songIndex) {
+function removeSongFromPlaylist(pi, si) {
   var ud = getUserData();
-  ud.playlists[plIndex].songs.splice(songIndex, 1);
+  ud.playlists[pi].songs.splice(si, 1);
   saveUserData(ud);
-  viewPlaylist(plIndex);
+  viewPlaylist(pi);
 }
 
-// ─── Playlist Modal ──────────────────────────────────────────────
+// Modal
 function showAddToPlaylist(song) {
   var ud = getUserData();
   if (!ud.playlists.length) { showToast('Create a playlist first!'); switchTab('playlists'); return; }
@@ -703,25 +647,24 @@ function showAddToPlaylist(song) {
   modal.innerHTML = '<div class="modal-box" onclick="event.stopPropagation()">' +
     '<h3>Add to playlist</h3>' +
     ud.playlists.map(function(pl, i) {
-      return '<button class="modal-pl-btn" onclick="addSongToPlaylist(' + i + ',' + safeJson(song) + ')">' +
+      return '<button class="modal-pl-btn" data-song="' + safeJson(song) + '" data-pli="' + i + '" onclick="addSongToPlaylist(parseInt(this.dataset.pli),JSON.parse(decodeURIComponent(this.dataset.song)))">' +
         esc(pl.name) + ' <span class="modal-count">(' + pl.songs.length + ')</span></button>';
     }).join('') +
-    '<button class="btn-card btn-danger modal-cancel" onclick="closeModal()">Cancel</button>' +
-    '</div>';
+    '<button class="btn-card btn-danger modal-cancel" onclick="closeModal()">Cancel</button></div>';
   modal.style.display = 'flex';
 }
 
-function addSongToPlaylist(plIndex, song) {
-  var ud = getUserData(); var pl = ud.playlists[plIndex];
-  var exists = pl.songs.some(function(s) { return s.videoId === song.videoId; });
-  if (!exists) { pl.songs.push(song); saveUserData(ud); showToast('Added to "' + pl.name + '"'); }
-  else showToast('Already in "' + pl.name + '"');
+function addSongToPlaylist(pi, song) {
+  var ud = getUserData(); var pl = ud.playlists[pi];
+  if (!pl.songs.some(function(s) { return s.videoId === song.videoId; })) {
+    pl.songs.push(song); saveUserData(ud); showToast('Added to ' + pl.name);
+  } else { showToast('Already in ' + pl.name); }
   closeModal();
 }
 
 function closeModal() { $('playlist-modal').style.display = 'none'; }
 
-// ─── Keyboard shortcuts ─────────────────────────────────────────
+// Keyboard
 document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.code === 'Space') { e.preventDefault(); togglePlayPause(); }
@@ -731,5 +674,5 @@ document.addEventListener('keydown', function(e) {
   if (e.code === 'KeyR') toggleRepeat();
 });
 
-// ─── Init ───────────────────────────────────────────────────────
+// Init
 initAuth();
