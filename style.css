@@ -880,7 +880,7 @@ body.app-active { overflow: hidden; }
   #mobile-nav {
     display: flex;
     position: fixed;
-    bottom: var(--player-h);
+    bottom: 0;
     left: 0; right: 0;
     height: var(--mobile-nav-h);
     background: #111;
@@ -910,6 +910,7 @@ body.app-active { overflow: hidden; }
 
   /* ── Player bar ── */
   #player-bar {
+    bottom: var(--mobile-nav-h);
     flex-direction: column;
     height: var(--player-h);
     padding: 7px 12px 6px;
