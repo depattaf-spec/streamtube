@@ -2,18 +2,9 @@
 // FredTube v3.0 â app.js (Firebase Edition)
 // ================================================================
 
-// Firebase config
-var firebaseConfig = {
-  apiKey: "AIzaSyCBNLblfNDXQ6ebHigCrtt_ZV8aCUlm8kk",
-  authDomain: "fredtube-3cc83.firebaseapp.com",
-  projectId: "fredtube-3cc83",
-  storageBucket: "fredtube-3cc83.firebasestorage.app",
-  messagingSenderId: "240391193703",
-  appId: "1:240391193703:web:5fd7531c26e15f98ae80c2"
-};
-firebase.initializeApp(firebaseConfig);
-var auth = firebase.auth();
-var db = firebase.firestore();
+// Firebase — initialised async from /api/firebase-config (keeps credentials out of source code)
+var auth = null;
+var db   = null;
 
 // App state
 var currentUser = null;
@@ -785,4 +776,12 @@ document.addEventListener('keydown', function(e) {
 
 // ââ Init ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-initAuth();
+fetch('/api/firebase-config')
+  .then(function(r) { return r.json(); })
+  .then(function(cfg) {
+    firebase.initializeApp(cfg);
+    auth = firebase.auth();
+    db   = firebase.firestore();
+    initAuth();
+  })
+  .catch(function(err) { console.error('Firebase config load failed:', err); });
