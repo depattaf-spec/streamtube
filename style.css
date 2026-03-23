@@ -1005,3 +1005,9 @@ body.app-active { overflow: hidden; }
   .btn-sm-green, .btn-sm-ghost { padding: 8px 14px; font-size: 13px; min-height: 36px; }
   .btn-back { padding: 8px 14px; font-size: 14px; min-height: 40px; }
 }
+
+
+/* Hide mobile nav when not logged in */
+body:not(.app-active) #mobile-nav {
+  display: none !important;
+}
