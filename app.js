@@ -2,7 +2,8 @@
 // FredTube v3.0 â app.js (Firebase Edition)
 // ================================================================
 
-// Firebase — initialised async from /api/firebase-config (keeps credentials out of source code)
+
+// Firebase â initialised async from /api/firebase-config
 var auth = null;
 var db   = null;
 
@@ -124,7 +125,41 @@ function getUserData() {
 function saveUserData(data) {
   currentUserData = Object.assign({}, currentUserData || {}, data);
   if (!currentUserData.favorites) currentUserData.favorites = [];
-  if (!currentUserData.playlists) currentUserData.playlists = [Tab) activeTab.classList.add('active');
+  if (!currentUserData.playlists) currentUserData.playlists = [];
+  if (!currentUserData.recentlyPlayed) currentUserData.recentlyPlayed = [];
+  var user = auth.currentUser;
+  if (user) {
+    db.collection('users').doc(user.uid).set(currentUserData).catch(function(err) {
+      console.error('saveUserData error', err);
+    });
+  }
+}
+
+// ââ Views âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+function showAuth() {
+  $('auth-screen').style.display = 'flex';
+  $('app-screen').style.display = 'none';
+  document.body.classList.remove('app-active');
+}
+
+function showApp() {
+  $('auth-screen').style.display = 'none';
+  $('app-screen').style.display = 'flex';
+  document.body.classList.add('app-active');
+  $('user-email').textContent = currentUser;
+  switchTab('home');
+}
+
+function switchTab(tab) {
+  ['home','search','favorites','playlists'].forEach(function(t) {
+    var el = $(t + '-tab');
+    if (el) el.classList.remove('active');
+    var mob = $('mob-' + t + '-tab');
+    if (mob) mob.classList.remove('active');
+  });
+  var activeTab = $(tab + '-tab');
+  if (activeTab) activeTab.classList.add('active');
   var activeMob = $('mob-' + tab + '-tab');
   if (activeMob) activeMob.classList.add('active');
   ['home-view','search-view','favorites-view','playlists-view','playlist-detail-view'].forEach(function(v) {
@@ -391,64 +426,6 @@ function renderRecentlyPlayed() {
   container.innerHTML = recent.slice(0, 10).map(function(s) {
     return '<div class="recent-card" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
-      '<div class="recent-title">' + esc(s.title) + '</div></div>';
-  }).join('');
-}
-
-function renderRecommendations() {
-  var section = $('recommendations-section');
-  var container = $('recommendations-container');
-  if (!section || !container) return;
-  var ud = getUserData();
-  var recent = ud.recentlyPlayed || [];
-  var pool = ud.favorites.concat(recent).slice(0, 8);
-  if (!pool.length) { section.style.display = 'none'; return; }
-  section.style.display = '';
-  var words = pool.map(function(s) { return s.title || ''; }).join(' ')
-    .split(/\W+/).filter(function(w) { return w.length > 3; });
-  var unique = [];
-  words.forEach(function(w) { if (unique.indexOf(w) === -1) unique.push(w); });
-  var query = unique.slice(0, 4).join(' ') || 'popular music';
-  container.innerHTML = '<div class="loading-mini">Loading recommendations\u2026</div>';
-  fetch('/api/search?q=' + encodeURIComponent(query))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var songs = (data.items || []).slice(0, 6).map(function(item) {
-        return {
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
-          channel: item.snippet.channelTitle
-        };
-      });
-      container.innerHTML = songs.map(function(s) { return songCard(s); }).join('');
-    })
-    .catch(function() { section.style.display = 'none'; });
-}
-
-// ââ Search ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-
-var _currentResults = [];
-
-function searchYouTube() {
-  var query = $('search-input').value.trim();
-  if (!query) return;
-  $('search-results').innerHTML = '<div class="loading-state">Searching\u2026</div>';
-  $('search-suggestions').innerHTML = '';
-  fetch('/api/search?q=' + encodeURIComponent(query))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.error) {
-        $('search-results').innerHTML = '<div class="empty-state"><h3>API Error</h3><p>' + esc(data.error.message || data.error) + '</p></div>';
-        return;
-      }
-      var items = data.items || [];
-      if (!items.length) { $('search-results').innerHTML = '<div class="empty-state"><h3>No results</h3></div>'; return; }
-      var songs = items.map(function(item) {
-        return {
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.dmbnail) + '" alt="">' +
       '<div class="recent-title">' + esc(s.title) + '</div></div>';
   }).join('');
 }
@@ -773,6 +750,7 @@ document.addEventListener('keydown', function(e) {
   if (e.code === 'KeyS') toggleShuffle();
   if (e.code === 'KeyR') toggleRepeat();
 });
+
 
 // ââ Init ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
