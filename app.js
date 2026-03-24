@@ -1,5 +1,7 @@
 // ================================================================
-// FredTube v3.0 â app.js (Firebase Edition)
+// FredTube v3.1 â app.js (Firebase Edition)
+// Features: Media Session, Artist Radio, Crossfade, Artist Pages,
+//           Because You Liked, Genre Radio, Smart Playlists, Dup Detection
 // ================================================================
 
 
@@ -18,6 +20,12 @@ var queueIndex = -1;
 var shuffleMode = false;
 var repeatMode = 'none';
 var progressInterval = null;
+// Crossfade state
+var crossfadeActive  = false;
+var crossfadeStarted = false;
+var crossfadeTimer   = null;
+// Radio state
+var genreRadioQuery  = null; // set when genre radio is on
 
 function $(id) { return document.getElementById(id); }
 function esc(s) {
@@ -52,6 +60,18 @@ function showToast(msg) {
   setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
+// ââ Helpers âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+function isFavorite(videoId) {
+  return getUserData().favorites.some(function(s) { return s.videoId === videoId; });
+}
+
+function searchArtist(name) {
+  switchTab('search');
+  $('search-input').value = name;
+  searchYouTube();
+}
+
 // ââ Firebase Auth âââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function loadUserData(uid) {
@@ -59,15 +79,16 @@ function loadUserData(uid) {
     if (doc.exists) {
       currentUserData = doc.data();
     } else {
-      currentUserData = { favorites: [], playlists: [], recentlyPlayed: [] };
+      currentUserData = { favorites: [], playlists: [], recentlyPlayed: [], playCounts: {} };
       return db.collection('users').doc(uid).set(currentUserData);
     }
     if (!currentUserData.favorites) currentUserData.favorites = [];
     if (!currentUserData.playlists) currentUserData.playlists = [];
     if (!currentUserData.recentlyPlayed) currentUserData.recentlyPlayed = [];
+    if (!currentUserData.playCounts) currentUserData.playCounts = {};
   }).catch(function(err) {
     console.error('loadUserData error', err);
-    currentUserData = { favorites: [], playlists: [], recentlyPlayed: [] };
+    currentUserData = { favorites: [], playlists: [], recentlyPlayed: [], playCounts: {} };
   });
 }
 
@@ -113,13 +134,14 @@ function login() {
 function logout() {
   queue = [];
   queueIndex = -1;
+  genreRadioQuery = null;
   if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
   $('player-bar').style.display = 'none';
   auth.signOut();
 }
 
 function getUserData() {
-  return currentUserData || { favorites: [], playlists: [], recentlyPlayed: [] };
+  return currentUserData || { favorites: [], playlists: [], recentlyPlayed: [], playCounts: {} };
 }
 
 function saveUserData(data) {
@@ -127,6 +149,7 @@ function saveUserData(data) {
   if (!currentUserData.favorites) currentUserData.favorites = [];
   if (!currentUserData.playlists) currentUserData.playlists = [];
   if (!currentUserData.recentlyPlayed) currentUserData.recentlyPlayed = [];
+  if (!currentUserData.playCounts) currentUserData.playCounts = {};
   var user = auth.currentUser;
   if (user) {
     db.collection('users').doc(user.uid).set(currentUserData).catch(function(err) {
@@ -208,11 +231,14 @@ function onPlayerStateChange(event) {
 
 function handleSongEnd() {
   if (repeatMode === 'one') { ytPlayer.seekTo(0); ytPlayer.playVideo(); return; }
+  // Ignore natural end if crossfade already triggered the next song
+  if (crossfadeActive) { crossfadeActive = false; return; }
   advanceQueue(1);
 }
 
 function startProgressTracking() {
   clearInterval(progressInterval);
+  crossfadeStarted = false;
   progressInterval = setInterval(function() {
     if (!ytPlayer || !ytPlayer.getCurrentTime) return;
     var cur = ytPlayer.getCurrentTime() || 0;
@@ -221,6 +247,23 @@ function startProgressTracking() {
       $('progress-fill').style.width = (cur / dur * 100) + '%';
       $('time-current').textContent = formatTime(cur);
       $('time-total').textContent = formatTime(dur);
+      // Crossfade: fade out in last 5s (only for songs > 10s)
+      if (dur > 10 && dur - cur < 5 && dur - cur > 0.2 && !crossfadeStarted) {
+        crossfadeStarted = true;
+        crossfadeActive  = true;
+        var baseVol = ytPlayer.getVolume ? ytPlayer.getVolume() : 100;
+        var steps = 0, totalSteps = 20;
+        crossfadeTimer = setInterval(function() {
+          steps++;
+          var newVol = Math.max(0, Math.round(baseVol * (1 - steps / totalSteps)));
+          if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(newVol);
+          if (steps >= totalSteps) {
+            clearInterval(crossfadeTimer);
+            crossfadeTimer = null;
+            advanceQueue(1);
+          }
+        }, 250);
+      }
     }
   }, 500);
 }
@@ -255,11 +298,19 @@ function toggleRepeat() {
 }
 
 function advanceQueue(dir) {
+  // Reset crossfade state on any queue advance
+  crossfadeActive  = false;
+  crossfadeStarted = false;
+  if (crossfadeTimer) { clearInterval(crossfadeTimer); crossfadeTimer = null; }
+  // Restore volume after crossfade
+  if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(100);
+
   if (!queue.length) return;
   var next = queueIndex + dir;
   if (next >= queue.length) {
-    if (repeatMode === 'all') next = 0;
-    else { showToast('End of queue'); return; }
+    if (repeatMode === 'all') { next = 0; }
+    else if (genreRadioQuery) { genreRadio(); return; }
+    else { artistRadio(); return; } // always-on: auto-queue more songs by same artist
   }
   if (next < 0) next = 0;
   queueIndex = next;
@@ -284,15 +335,43 @@ function playSong(meta) {
   $('player-thumb').src = meta.thumbnail || '';
   $('player-bar').style.display = 'flex';
   $('play-pause-btn').textContent = '\u23F8';
+  // Update fav button state
+  var favBtn = $('player-fav-btn');
+  if (favBtn) favBtn.textContent = isFavorite(meta.videoId) ? '\u2665' : '\u2661';
   renderQueueList();
-  if (ytPlayer && ytPlayer.loadVideoById) {
+
+  // Media Session API â enables lock screen controls + Now Playing widget
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title:  meta.title  || 'Unknown',
+        artist: meta.channel || '',
+        artwork: [{ src: meta.thumbnail || '', sizes: '120x90', type: 'image/jpeg' }]
+      });
+      navigator.mediaSession.setActionHandler('play',          function() { if (ytPlayer) ytPlayer.playVideo(); });
+      navigator.mediaSession.setActionHandler('pause',         function() { if (ytPlayer) ytPlayer.pauseVideo(); });
+      navigator.mediaSession.setActionHandler('nexttrack',     function() { advanceQueue(1); });
+      navigator.mediaSession.setActionHandler('previoustrack', function() { advanceQueue(-1); });
+    } catch(e) {}
+  }
+
+  function doLoad() {
+    // Crossfade fade-in: ramp volume 0 â 100 over ~2s
+    if (ytPlayer.setVolume) ytPlayer.setVolume(0);
     ytPlayer.loadVideoById(meta.videoId);
+    var v = 0;
+    var fi = setInterval(function() {
+      v = Math.min(100, v + 10);
+      if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(v);
+      if (v >= 100) clearInterval(fi);
+    }, 200);
+  }
+
+  if (ytPlayer && ytPlayer.loadVideoById) {
+    doLoad();
   } else {
     var check = setInterval(function() {
-      if (ytPlayer && ytPlayer.loadVideoById) {
-        clearInterval(check);
-        ytPlayer.loadVideoById(meta.videoId);
-      }
+      if (ytPlayer && ytPlayer.loadVideoById) { clearInterval(check); doLoad(); }
     }, 200);
   }
   addToRecentlyPlayed(meta);
@@ -303,14 +382,96 @@ function addToRecentlyPlayed(meta) {
   var recent = (ud.recentlyPlayed || []).slice();
   recent = recent.filter(function(s) { return s.videoId !== meta.videoId; });
   recent.unshift(meta);
-  saveUserData({ recentlyPlayed: recent.slice(0, 20) });
+  // Track play counts for Smart Playlists
+  var counts = ud.playCounts || {};
+  counts[meta.videoId] = (counts[meta.videoId] || 0) + 1;
+  saveUserData({ recentlyPlayed: recent.slice(0, 20), playCounts: counts });
 }
 
 function favCurrentSong() {
   if (currentSong) {
     addFavorite(currentSong);
-    $('player-fav-btn').textContent = '\u2665';
   }
+}
+
+// ââ Artist Radio ââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+function artistRadio() {
+  if (!currentSong) { showToast('End of queue'); return; }
+  var artist = (currentSong.channel || currentSong.title.split('-')[0]).trim();
+  showToast('\u25CF Artist radio: ' + artist);
+  fetch('/api/search?q=' + encodeURIComponent(artist + ' top songs'))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var curId = currentSong ? currentSong.videoId : null;
+      var songs = (data.items || []).map(function(item) {
+        return {
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
+          channel: item.snippet.channelTitle
+        };
+      }).filter(function(s) {
+        return s.videoId !== curId && !queue.some(function(q) { return q.videoId === s.videoId; });
+      });
+      if (songs.length) {
+        queue = queue.concat(songs);
+        advanceQueue(1);
+      } else {
+        showToast('End of queue');
+      }
+    }).catch(function() { showToast('End of queue'); });
+}
+
+// ââ Genre Radio âââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+function genreRadio() {
+  if (!genreRadioQuery) return;
+  fetch('/api/search?q=' + encodeURIComponent(genreRadioQuery + ' popular'))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var newSongs = (data.items || []).map(function(item) {
+        return {
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
+          channel: item.snippet.channelTitle
+        };
+      }).filter(function(s) {
+        return !queue.some(function(q) { return q.videoId === s.videoId; });
+      });
+      if (newSongs.length) {
+        queue = queue.concat(shuffleArray(newSongs));
+        advanceQueue(1);
+      }
+    }).catch(function() {});
+}
+
+function startGenreRadio(cardId, query) {
+  genreRadioQuery = query;
+  var card = $(cardId);
+  if (card && card.dataset.songs) {
+    var songs = JSON.parse(card.dataset.songs);
+    if (songs.length) {
+      playQueue(shuffleArray(songs), 0);
+      showToast('\uD83D\uDCFB Genre radio on');
+      return;
+    }
+  }
+  showToast('\uD83D\uDCFB Genre radio \u2014 loading\u2026');
+  fetch('/api/search?q=' + encodeURIComponent(query + ' popular'))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var songs = (data.items || []).map(function(item) {
+        return {
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          thumbnail: ((item.snippet.thumbnails.medium || item.snippet.thumbnails.default) || {}).url || '',
+          channel: item.snippet.channelTitle
+        };
+      });
+      if (songs.length) playQueue(shuffleArray(songs), 0);
+    }).catch(function() {});
 }
 
 // ââ Queue Panel âââââââââââââââââââââââââââââââââââââââââââââââââââ
@@ -337,7 +498,7 @@ function toggleQueuePanel() { $('queue-panel').classList.toggle('open'); }
 // ââ Home ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 var FEATURED_CATEGORIES = [
-  { label: 'Top Hits 2024',      query: 'top hits 2024' },
+  { label: 'Top Hits 2025',      query: 'top hits 2025' },
   { label: 'Chill Vibes',        query: 'chill vibes music' },
   { label: 'Hip Hop Essentials', query: 'hip hop essentials' },
   { label: 'Pop Anthems',        query: 'pop anthems best songs' },
@@ -356,12 +517,13 @@ function loadFeaturedCollections() {
   if (!container) return;
   container.innerHTML = FEATURED_CATEGORIES.map(function(c) {
     var id = 'feat-' + c.query.replace(/\W+/g, '_');
-    return '<div class="featured-card" id="' + id + '">' +
+    return '<div class="featured-card" id="' + id + '" data-query="' + esc(c.query) + '">' +
       '<div class="featured-card-header">' +
       '<span class="featured-label">' + esc(c.label) + '</span>' +
       '<div class="featured-actions">' +
       '<button class="btn btn-sm-green" data-cid="' + esc(id) + '" onclick="playFeaturedCard(this.dataset.cid)">&#9654; Play All</button>' +
       '<button class="btn btn-sm-ghost" data-cid="' + esc(id) + '" onclick="shuffleFeaturedCard(this.dataset.cid)">&#128256; Shuffle</button>' +
+      '<button class="btn btn-sm-radio" data-cid="' + esc(id) + '" data-query="' + esc(c.query) + '" onclick="startGenreRadio(this.dataset.cid, this.dataset.query)">&#128251; Radio</button>' +
       '</div></div><div class="featured-songs-list"><div class="loading-mini">Loading\u2026</div></div></div>';
   }).join('');
   FEATURED_CATEGORIES.forEach(function(c) {
@@ -384,12 +546,12 @@ function fetchFeaturedCategory(c, cardId) {
       });
       card.dataset.songs = JSON.stringify(songs);
       card.querySelector('.featured-songs-list').innerHTML = songs.map(function(s, i) {
-        return '<div class="feat-row" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">' +
+        return '<div class="feat-row" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(this.dataset.song))">' +
           '<span class="feat-num">' + (i+1) + '</span>' +
           '<img src="' + esc(s.thumbnail) + '" alt="">' +
           '<div class="feat-info"><div class="feat-title">' + esc(s.title) + '</div>' +
-          '<div class="feat-ch">' + esc(s.channel) + '</div></div>' +
-          '<button class="feat-add-fav" data-song="' + safeJson(s) + '" onclick="event.stopPropagation();addFavorite(JSON.parse(decodeURIComponent(this.dataset.song)))" title="Add to favorites">&#9825;</button>' +
+          '<div class="feat-ch"><button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button></div></div>' +
+          '<button class="feat-add-fav' + (isFavorite(s.videoId) ? ' fav-active' : '') + '" data-song="' + safeJson(s) + '" onclick="event.stopPropagation();addFavorite(JSON.parse(this.dataset.song))" title="Favorite">' + (isFavorite(s.videoId) ? '&#9829;' : '&#9825;') + '</button>' +
           '</div>';
       }).join('');
     })
@@ -403,7 +565,7 @@ function playFeaturedCard(cardId) {
   var card = $(cardId);
   if (!card || !card.dataset.songs) return;
   var songs = JSON.parse(card.dataset.songs);
-  if (songs.length) playQueue(songs, 0);
+  if (songs.length) { genreRadioQuery = card.dataset.query || null; playQueue(songs, 0); }
 }
 
 function shuffleFeaturedCard(cardId) {
@@ -412,6 +574,7 @@ function shuffleFeaturedCard(cardId) {
   var songs = JSON.parse(card.dataset.songs);
   if (!songs.length) return;
   var saved = shuffleMode; shuffleMode = true;
+  genreRadioQuery = card.dataset.query || null;
   playQueue(songs, 0);
   shuffleMode = saved;
 }
@@ -424,7 +587,7 @@ function renderRecentlyPlayed() {
   if (!recent.length) { section.style.display = 'none'; return; }
   section.style.display = '';
   container.innerHTML = recent.slice(0, 10).map(function(s) {
-    return '<div class="recent-card" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">' +
+    return '<div class="recent-card" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(this.dataset.song))">' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
       '<div class="recent-title">' + esc(s.title) + '</div></div>';
   }).join('');
@@ -436,15 +599,16 @@ function renderRecommendations() {
   if (!section || !container) return;
   var ud = getUserData();
   var recent = ud.recentlyPlayed || [];
-  var pool = ud.favorites.concat(recent).slice(0, 8);
+  var pool = ud.favorites.concat(recent).filter(function(s) { return s && s.videoId; });
   if (!pool.length) { section.style.display = 'none'; return; }
   section.style.display = '';
-  var words = pool.map(function(s) { return s.title || ''; }).join(' ')
-    .split(/\W+/).filter(function(w) { return w.length > 3; });
-  var unique = [];
-  words.forEach(function(w) { if (unique.indexOf(w) === -1) unique.push(w); });
-  var query = unique.slice(0, 4).join(' ') || 'popular music';
-  container.innerHTML = '<div class="loading-mini">Loading recommendations\u2026</div>';
+  // Pick a random seed from top 5 (weighted toward favorites)
+  var seed = pool[Math.floor(Math.random() * Math.min(pool.length, 5))];
+  var seedName = (seed.title || seed.channel || '').slice(0, 35);
+  var query = (seed.channel || seed.title.split('-')[0]).trim() + ' similar songs';
+  container.innerHTML =
+    '<div class="because-label">Because you liked \u201c' + esc(seedName) + (seed.title && seed.title.length > 35 ? '\u2026' : '') + '\u201d</div>' +
+    '<div class="loading-mini">Loading\u2026</div>';
   fetch('/api/search?q=' + encodeURIComponent(query))
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -456,7 +620,9 @@ function renderRecommendations() {
           channel: item.snippet.channelTitle
         };
       });
-      container.innerHTML = songs.map(function(s) { return songCard(s); }).join('');
+      container.innerHTML =
+        '<div class="because-label">Because you liked \u201c' + esc(seedName) + (seed.title && seed.title.length > 35 ? '\u2026' : '') + '\u201d</div>' +
+        '<div class="songs-grid">' + songs.map(function(s) { return songCard(s); }).join('') + '</div>';
     })
     .catch(function() { section.style.display = 'none'; });
 }
@@ -468,6 +634,7 @@ var _currentResults = [];
 function searchYouTube() {
   var query = $('search-input').value.trim();
   if (!query) return;
+  genreRadioQuery = null; // clear genre radio when user searches manually
   $('search-results').innerHTML = '<div class="loading-state">Searching\u2026</div>';
   $('search-suggestions').innerHTML = '';
   fetch('/api/search?q=' + encodeURIComponent(query))
@@ -533,14 +700,17 @@ function loadSearchSuggestions(query) {
 
 function songCard(s) {
   var ds = safeJson(s);
+  var fav = isFavorite(s.videoId);
   return '<div class="song-card">' +
     '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
-    '<div class="card-info"><div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
-    '<div class="card-channel">' + esc(s.channel) + '</div></div>' +
+    '<div class="card-info">' +
+    '<div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
+    '<button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button>' +
+    '</div>' +
     '<div class="card-actions">' +
-    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">&#9654; Play</button>' +
-    '<button class="btn-card btn-fav-card" data-song="' + ds + '" onclick="addFavorite(JSON.parse(decodeURIComponent(this.dataset.song)))" title="Favorite">&#9825;</button>' +
-    '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(decodeURIComponent(this.dataset.song)))">+ List</button>' +
+    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))">&#9654; Play</button>' +
+    '<button class="btn-card btn-fav-card' + (fav ? ' fav-active' : '') + '" data-song="' + ds + '" onclick="addFavorite(JSON.parse(this.dataset.song))" title="Favorite">' + (fav ? '&#9829;' : '&#9825;') + '</button>' +
+    '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
     '</div></div>';
 }
 
@@ -552,8 +722,13 @@ function addFavorite(song) {
     ud.favorites.unshift(song);
     saveUserData(ud);
     showToast('Added to favorites \u2665');
+    // Update player fav button if this is the current song
+    if (currentSong && currentSong.videoId === song.videoId) {
+      var btn = $('player-fav-btn');
+      if (btn) btn.textContent = '\u2665';
+    }
   } else {
-    showToast('Already in favorites');
+    showToast('Already in favorites \u2665');
   }
 }
 
@@ -583,11 +758,13 @@ function favCard(s) {
   var ds = safeJson(s);
   return '<div class="song-card">' +
     '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
-    '<div class="card-info"><div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
-    '<div class="card-channel">' + esc(s.channel) + '</div></div>' +
+    '<div class="card-info">' +
+    '<div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
+    '<button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button>' +
+    '</div>' +
     '<div class="card-actions">' +
-    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">&#9654; Play</button>' +
-    '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(decodeURIComponent(this.dataset.song)))">+ List</button>' +
+    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))">&#9654; Play</button>' +
+    '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
     '<button class="btn-card btn-danger" data-vid="' + esc(s.videoId) + '" onclick="removeFavorite(this.dataset.vid)">&#10005; Remove</button>' +
     '</div></div>';
 }
@@ -609,14 +786,90 @@ function shuffleFavorites() {
 function renderPlaylists() {
   var container = $('playlists-container');
   var ud = getUserData();
+  var smartHtml = buildSmartPlaylistCards(ud);
   var cardsHtml = ud.playlists.length
     ? ud.playlists.map(function(pl, i) { return playlistCard(pl, i); }).join('')
-    : '<div class="empty-state"><h3>No playlists yet</h3></div>';
+    : '';
+  var yourPlSection = cardsHtml ||
+    (!smartHtml ? '<div class="empty-state"><h3>No playlists yet</h3><p>Create your first one above.</p></div>' : '');
+
   container.innerHTML =
     '<div class="create-playlist-bar">' +
     '<input id="new-pl-name" class="pl-name-input" placeholder="Playlist name\u2026" onkeydown="if(event.key===&quot;Enter&quot;)createPlaylist()" />' +
     '<button class="btn btn-green" onclick="createPlaylist()">+ Create</button>' +
-    '</div><div class="playlists-grid">' + cardsHtml + '</div>';
+    '</div>' +
+    (smartHtml
+      ? '<h3 class="smart-section-title">Smart Playlists</h3><div class="playlists-grid">' + smartHtml + '</div>'
+      : '') +
+    '<h3 class="smart-section-title">Your Playlists</h3>' +
+    '<div class="playlists-grid">' + yourPlSection + '</div>';
+}
+
+function buildSmartPlaylistCards(ud) {
+  var cards = [];
+  var recent = ud.recentlyPlayed || [];
+  if (recent.length) {
+    cards.push(
+      '<div class="playlist-card smart-pl">' +
+      '<div class="pl-thumb smart-pl-icon">&#128337;</div>' +
+      '<div class="pl-info"><div class="pl-name">Recently Played</div><div class="pl-count">' + recent.length + ' songs</div></div>' +
+      '<div class="pl-actions">' +
+      '<button class="btn-card btn-card-play" onclick="playSmartPlaylist(\'recent\')">&#9654; Play</button>' +
+      '<button class="btn-card" onclick="shuffleSmartPlaylist(\'recent\')">&#128256;</button>' +
+      '</div></div>'
+    );
+  }
+  // Most Played â needs at least 3 tracked songs
+  var counts = ud.playCounts || {};
+  var countKeys = Object.keys(counts);
+  if (countKeys.length >= 3) {
+    var allSongs = ud.favorites.concat(recent);
+    var songMap = {};
+    allSongs.forEach(function(s) { if (s && s.videoId && !songMap[s.videoId]) songMap[s.videoId] = s; });
+    var topSongs = countKeys
+      .sort(function(a, b) { return counts[b] - counts[a]; })
+      .slice(0, 20)
+      .map(function(vid) { return songMap[vid]; })
+      .filter(Boolean);
+    if (topSongs.length >= 3) {
+      cards.push(
+        '<div class="playlist-card smart-pl">' +
+        '<div class="pl-thumb smart-pl-icon">&#128293;</div>' +
+        '<div class="pl-info"><div class="pl-name">Most Played</div><div class="pl-count">' + topSongs.length + ' songs</div></div>' +
+        '<div class="pl-actions">' +
+        '<button class="btn-card btn-card-play" onclick="playSmartPlaylist(\'top\')">&#9654; Play</button>' +
+        '<button class="btn-card" onclick="shuffleSmartPlaylist(\'top\')">&#128256;</button>' +
+        '</div></div>'
+      );
+    }
+  }
+  return cards.join('');
+}
+
+function playSmartPlaylist(type) {
+  var ud = getUserData();
+  if (type === 'recent') {
+    if (ud.recentlyPlayed && ud.recentlyPlayed.length) playQueue(ud.recentlyPlayed, 0);
+    return;
+  }
+  if (type === 'top') {
+    var counts = ud.playCounts || {};
+    var allSongs = ud.favorites.concat(ud.recentlyPlayed || []);
+    var songMap = {};
+    allSongs.forEach(function(s) { if (s && s.videoId && !songMap[s.videoId]) songMap[s.videoId] = s; });
+    var topSongs = Object.keys(counts)
+      .sort(function(a, b) { return counts[b] - counts[a]; })
+      .slice(0, 20)
+      .map(function(vid) { return songMap[vid]; })
+      .filter(Boolean);
+    if (topSongs.length) playQueue(topSongs, 0);
+  }
+}
+
+function shuffleSmartPlaylist(type) {
+  var saved = shuffleMode; shuffleMode = true;
+  playSmartPlaylist(type);
+  shuffleMode = saved;
 }
 
 function playlistCard(pl, i) {
@@ -668,9 +921,9 @@ function viewPlaylist(i) {
           '<span class="pl-song-num">' + (j+1) + '</span>' +
           '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
           '<div class="card-info"><div class="card-title">' + esc(s.title) + '</div>' +
-          '<div class="card-channel">' + esc(s.channel) + '</div></div>' +
+          '<button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button></div>' +
           '<div class="card-actions">' +
-          '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(decodeURIComponent(this.dataset.song)))">&#9654; Play</button>' +
+          '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))">&#9654; Play</button>' +
           '<button class="btn-card btn-danger" onclick="removeSongFromPlaylist(' + i + ',' + j + ')">&#10005;</button>' +
           '</div></div>';
       }).join('')
@@ -717,9 +970,12 @@ function showAddToPlaylist(song) {
     '<div class="modal-box" onclick="event.stopPropagation()">' +
     '<h3>Add to playlist</h3>' +
     ud.playlists.map(function(pl, i) {
-      return '<button class="modal-pl-btn" data-song="' + safeJson(song) + '" data-pli="' + i +
-        '" onclick="addSongToPlaylist(parseInt(this.dataset.pli),JSON.parse(decodeURIComponent(this.dataset.song)))">' +
-        esc(pl.name) + ' <span class="modal-count">(' + pl.songs.length + ')</span></button>';
+      var alreadyIn = pl.songs.some(function(s) { return s.videoId === song.videoId; });
+      return '<button class="modal-pl-btn' + (alreadyIn ? ' modal-pl-has' : '') + '" data-song="' + safeJson(song) + '" data-pli="' + i +
+        '" onclick="addSongToPlaylist(parseInt(this.dataset.pli),JSON.parse(this.dataset.song))">' +
+        esc(pl.name) + ' <span class="modal-count">(' + pl.songs.length + ')</span>' +
+        (alreadyIn ? ' <span class="modal-dup">\u2713</span>' : '') +
+        '</button>';
     }).join('') +
     '<button class="btn-card btn-danger modal-cancel" onclick="closeModal()">Cancel</button></div>';
   modal.style.display = 'flex';
