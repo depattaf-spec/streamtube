@@ -1,8 +1,8 @@
 /* ================================================================
-   FredTube v2.0 — style.css
+   FredTube v2.0 â style.css
    ================================================================ */
 
-/* ─── Reset & Base ─────────────────────────────────────────────── */
+/* âââ Reset & Base âââââââââââââââââââââââââââââââââââââââââââââââ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -29,17 +29,15 @@ html, body {
   color: var(--text);
   font-size: 14px;
   line-height: 1.5;
+  overflow: hidden;
 }
-body.app-active { overflow: hidden; }
 
-/* ─── Auth Screen ──────────────────────────────────────────────── */
+/* âââ Auth Screen ââââââââââââââââââââââââââââââââââââââââââââââââ */
 #auth-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  height: 100vh;
   background: radial-gradient(ellipse at 40% 30%, #1a2e1a 0%, var(--bg) 70%);
 }
 
@@ -103,14 +101,14 @@ body.app-active { overflow: hidden; }
 
 .form-error { color: var(--danger); font-size: 12px; min-height: 16px; }
 
-/* ─── App Layout ───────────────────────────────────────────────── */
+/* âââ App Layout âââââââââââââââââââââââââââââââââââââââââââââââââ */
 #app-screen {
   display: flex;
   height: calc(100vh - var(--player-h));
   overflow: hidden;
 }
 
-/* ─── Sidebar ──────────────────────────────────────────────────── */
+/* âââ Sidebar ââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 #sidebar {
   width: var(--sidebar-w);
   background: #111;
@@ -180,7 +178,7 @@ body.app-active { overflow: hidden; }
 }
 .btn-signout:hover { border-color: var(--danger); color: var(--danger); }
 
-/* ─── Main Content ─────────────────────────────────────────────── */
+/* âââ Main Content âââââââââââââââââââââââââââââââââââââââââââââââ */
 #main-content {
   flex: 1;
   overflow-y: auto;
@@ -195,7 +193,7 @@ body.app-active { overflow: hidden; }
 
 .view-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 24px; }
 
-/* ─── Buttons ──────────────────────────────────────────────────── */
+/* âââ Buttons ââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -257,7 +255,7 @@ body.app-active { overflow: hidden; }
 .btn-danger { color: var(--danger); }
 .btn-danger:hover { background: var(--danger); color: #fff; }
 
-/* ─── Section Titles ───────────────────────────────────────────── */
+/* âââ Section Titles âââââââââââââââââââââââââââââââââââââââââââââ */
 .section-title {
   font-size: 18px;
   font-weight: 700;
@@ -265,7 +263,7 @@ body.app-active { overflow: hidden; }
 }
 .suggestions-title { margin-top: 32px; }
 
-/* ─── Home Sections ────────────────────────────────────────────── */
+/* âââ Home Sections ââââââââââââââââââââââââââââââââââââââââââââââ */
 .home-section { margin-bottom: 36px; }
 
 /* Recently Played */
@@ -301,7 +299,7 @@ body.app-active { overflow: hidden; }
   white-space: nowrap;
 }
 
-/* ─── Featured Collections ─────────────────────────────────────── */
+/* âââ Featured Collections âââââââââââââââââââââââââââââââââââââââ */
 #featured-container { display: flex; flex-direction: column; gap: 20px; }
 
 .featured-card {
@@ -356,16 +354,48 @@ body.app-active { overflow: hidden; }
 
 .loading-mini { color: var(--text-muted); font-size: 13px; padding: 16px 18px; }
 
-/* ─── Search ───────────────────────────────────────────────────── */
+/* âââ Search âââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 .search-bar-wrap {
   display: flex;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   padding-top: 8px;
+}
+
+/* âââ Recent Searches ââââââââââââââââââââââââââââââââââââââââââââ */
+.recent-searches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  min-height: 0;
+}
+.recent-searches:empty { margin-bottom: 0; }
+.recent-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.chip {
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chip:hover {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--accent);
 }
 .search-input {
   flex: 1;
-  padding: 12px 18px;
+  padding: 12px 20px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 24px;
@@ -376,7 +406,7 @@ body.app-active { overflow: hidden; }
 }
 .search-input:focus { border-color: var(--accent); }
 
-/* ─── Results Header ───────────────────────────────────────────── */
+/* âââ Results Header âââââââââââââââââââââââââââââââââââââââââââââ */
 .results-header {
   display: flex;
   align-items: center;
@@ -388,7 +418,7 @@ body.app-active { overflow: hidden; }
 .results-header em { color: var(--text); font-style: normal; }
 .results-actions { display: flex; gap: 8px; }
 
-/* ─── Songs Grid ───────────────────────────────────────────────── */
+/* âââ Songs Grid âââââââââââââââââââââââââââââââââââââââââââââââââ */
 .songs-grid {
   display: flex;
   flex-direction: column;
@@ -427,7 +457,7 @@ body.app-active { overflow: hidden; }
 
 .pl-song-num { width: 20px; text-align: center; color: var(--text-muted); font-size: 12px; flex-shrink: 0; }
 
-/* ─── Loading / Empty States ───────────────────────────────────── */
+/* âââ Loading / Empty States âââââââââââââââââââââââââââââââââââââ */
 .loading-state {
   text-align: center;
   padding: 60px 20px;
@@ -441,9 +471,9 @@ body.app-active { overflow: hidden; }
 }
 .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
 
-/* ─── Favorites ────────────────────────────────────────────────── */
+/* âââ Favorites ââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-/* ─── Playlists ────────────────────────────────────────────────── */
+/* âââ Playlists âââââââââââââââââââââââââââââââââââââââââââââââââ */
 .create-playlist-bar {
   display: flex;
   gap: 10px;
@@ -520,7 +550,7 @@ body.app-active { overflow: hidden; }
 }
 .btn-back:hover { color: var(--text); border-color: var(--text-muted); }
 
-/* ─── Queue Panel ──────────────────────────────────────────────── */
+/* âââ Queue Panel ââââââââââââââââââââââââââââââââââââââââââââââââ */
 #queue-panel {
   position: fixed;
   top: 0;
@@ -592,7 +622,7 @@ body.app-active { overflow: hidden; }
   flex-shrink: 0;
 }
 
-/* ─── Player Bar ───────────────────────────────────────────────── */
+/* âââ Player Bar âââââââââââââââââââââââââââââââââââââââââââââââââ */
 #player-bar {
   position: fixed;
   bottom: 0;
@@ -763,7 +793,7 @@ body.app-active { overflow: hidden; }
 }
 .btn-queue-toggle:hover { border-color: var(--accent); color: var(--text); }
 
-/* ─── Playlist Modal ───────────────────────────────────────────── */
+/* âââ Playlist Modal âââââââââââââââââââââââââââââââââââââââââââââ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -807,7 +837,7 @@ body.app-active { overflow: hidden; }
 .modal-count { color: var(--text-muted); font-size: 12px; }
 .modal-cancel { width: 100%; margin-top: 4px; text-align: center; padding: 8px; }
 
-/* ─── Toast ────────────────────────────────────────────────────── */
+/* âââ Toast ââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 .toast {
   position: fixed;
   bottom: calc(var(--player-h) + 14px);
@@ -831,17 +861,17 @@ body.app-active { overflow: hidden; }
   transform: translateX(-50%) translateY(0);
 }
 
-/* ─── Scrollbar (global) ───────────────────────────────────────── */
+/* âââ Scrollbar (global) âââââââââââââââââââââââââââââââââââââââââ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #444; }
 
-/* ─── Mobile Bottom Nav (hidden on desktop) ────────────────────── */
+/* âââ Mobile Bottom Nav (hidden on desktop) ââââââââââââââââââââââ */
 #mobile-nav { display: none; }
 
 /* ================================================================
-   MOBILE  (≤ 640 px)
+   MOBILE  (â¤ 640 px)
    ================================================================ */
 @media (max-width: 640px) {
   :root {
@@ -849,38 +879,50 @@ body.app-active { overflow: hidden; }
     --mobile-nav-h: 60px;
   }
 
-  /* ── Body / Layout ── */
-  html, body { font-size: 15px; }
+  /* ââ Body / Layout ââ */
+  /* overflow:hidden is needed for the main app to prevent double-scrollbars,
+     but we override it on #auth-screen so the Sign In button is always reachable */
+  body { font-size: 15px; }
   body.app-active { overflow: hidden; }
+  body.app-active html { overflow: hidden; }
 
-  /* ── Auth screen ── */
+  /* ââ Auth screen ââ */
+  /* Allow auth screen to scroll so the Sign In button is always reachable,
+     even when the keyboard is open and shrinks the viewport */
+  #auth-screen {
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 40px 0 40px;
+  }
   .auth-card {
     width: calc(100vw - 32px);
     padding: 28px 20px;
     border-radius: 16px;
+    margin: auto; /* centre horizontally */
   }
   .auth-form input { font-size: 16px; padding: 14px; } /* prevent iOS zoom */
   .btn-full { padding: 14px; font-size: 16px; }
 
-  /* ── App screen ── */
+  /* ââ App screen ââ */
   #app-screen {
     height: calc(100vh - var(--player-h) - var(--mobile-nav-h));
   }
 
-  /* ── Hide desktop sidebar ── */
+  /* ââ Hide desktop sidebar ââ */
   #sidebar { display: none; }
 
-  /* ── Main content ── */
+  /* ââ Main content ââ */
   #main-content { padding: 14px 12px 8px; }
   .view-header h1 { font-size: 20px; margin-bottom: 14px; }
   .section-title { font-size: 15px; margin-bottom: 10px; }
   .home-section { margin-bottom: 22px; }
 
-  /* ── Mobile bottom nav ── */
+  /* ââ Mobile bottom nav ââ */
   #mobile-nav {
     display: flex;
     position: fixed;
-    bottom: 0;
+    bottom: var(--player-h);
     left: 0; right: 0;
     height: var(--mobile-nav-h);
     background: #111;
@@ -908,9 +950,8 @@ body.app-active { overflow: hidden; }
   .mob-label { font-size: 10px; font-weight: 500; }
   .mob-nav-item.active { color: var(--accent); border-top-color: var(--accent); }
 
-  /* ── Player bar ── */
+  /* ââ Player bar ââ */
   #player-bar {
-    bottom: var(--mobile-nav-h);
     flex-direction: column;
     height: var(--player-h);
     padding: 7px 12px 6px;
@@ -929,7 +970,7 @@ body.app-active { overflow: hidden; }
   #progress-bar { height: 5px; }
   #progress-bar:hover { height: 7px; }
 
-  /* ── YouTube player — keep alive but invisible on mobile ── */
+  /* ââ YouTube player â keep alive but invisible on mobile ââ */
   #yt-player {
     position: fixed;
     top: -200px;
@@ -943,16 +984,16 @@ body.app-active { overflow: hidden; }
   .btn-queue-toggle { display: none; }
   .player-right { gap: 0; }
 
-  /* ── Search ── */
+  /* ââ Search ââ */
   .search-bar-wrap { gap: 8px; margin-bottom: 16px; padding-top: 4px; }
   .search-input { font-size: 16px; padding: 12px 14px; } /* prevent iOS zoom */
   .search-btn { padding: 12px 16px; }
 
-  /* ── Results header ── */
+  /* ââ Results header ââ */
   .results-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .results-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
-  /* ── Song cards — bigger touch targets ── */
+  /* ââ Song cards â bigger touch targets ââ */
   .song-card { padding: 12px 10px; gap: 10px; }
   .song-card-thumb { width: 52px; height: 38px; }
   .card-title { font-size: 14px; }
@@ -961,7 +1002,7 @@ body.app-active { overflow: hidden; }
   .btn-card { padding: 7px 12px; font-size: 13px; min-height: 36px; }
   .btn-card-play { min-width: 70px; }
 
-  /* ── Featured collections ── */
+  /* ââ Featured collections ââ */
   .featured-card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .featured-actions { display: flex; gap: 6px; }
   .feat-row { padding: 9px 8px; }
@@ -969,46 +1010,154 @@ body.app-active { overflow: hidden; }
   .feat-title { font-size: 14px; }
   .feat-add-fav { opacity: 1; } /* always show on mobile (no hover) */
 
-  /* ── Recently played ── */
+  /* ââ Recently played ââ */
   .recent-card { width: 106px; }
   .recent-card img { width: 106px; height: 72px; }
 
-  /* ── Playlists ── */
+  /* ââ Playlists ââ */
   .playlists-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .pl-thumb { height: 100px; }
   .pl-name { font-size: 13px; }
   .create-playlist-bar { gap: 8px; }
   .pl-name-input { font-size: 16px; padding: 10px 12px; } /* prevent iOS zoom */
 
-  /* ── Playlist detail ── */
+  /* ââ Playlist detail ââ */
   .detail-header { gap: 8px; margin-bottom: 14px; }
   .detail-header h2 { font-size: 18px; }
 
-  /* ── Queue panel ── */
+  /* ââ Queue panel ââ */
   #queue-panel { width: 100%; right: -100%; }
   #queue-panel.open { right: 0; }
   .queue-item img { width: 48px; height: 34px; }
   .queue-item-title { font-size: 13px; }
 
-  /* ── Modal ── */
+  /* ââ Modal ââ */
   .modal-box { min-width: calc(100vw - 40px); padding: 20px 16px; }
   .modal-pl-btn { padding: 13px 14px; font-size: 15px; }
 
-  /* ── Toast ── */
+  /* ââ Toast ââ */
   .toast {
     bottom: calc(var(--player-h) + var(--mobile-nav-h) + 8px);
     font-size: 14px;
     padding: 10px 22px;
   }
 
-  /* ── Buttons — bigger tap area ── */
+  /* ââ Buttons â bigger tap area ââ */
   .btn { padding: 10px 18px; font-size: 14px; }
   .btn-sm-green, .btn-sm-ghost { padding: 8px 14px; font-size: 13px; min-height: 36px; }
-  .btn-back { padding: 8px 14px; font-size: 14px; min-height: 40px; }
+  .btn-back { padding: 8px14px; font-size: 14px; min-height: 40px; }
 }
 
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   New features CSS (v2) â artist links, radio, smart playlists,
+   because-you-liked, duplicate detection, fav-active
+   ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-/* Hide mobile nav when not logged in */
-body:not(.app-active) #mobile-nav {
-  display: none !important;
+/* ââ Artist link (clickable channel name in song cards) ââ */
+.artist-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.artist-link:hover { opacity: 1; text-decoration: underline; }
+
+/* ââ Radio button on genre cards ââ */
+.btn-sm-radio {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-sm-radio:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ââ Filled heart for favorited songs ââ */
+.btn-fav-card.fav-active { color: #e05; }
+.btn-fav-card { color: var(--text-secondary); }
+
+/* ââ "Because you liked X" label ââ */
+.because-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 12px;
+  padding: 6px 0 2px;
+}
+
+/* ââ Smart playlists section title ââ */
+.smart-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 18px 0 10px;
+}
+
+/* ââ Smart playlist cards ââ */
+.smart-pl {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.15s;
+}
+.smart-pl:hover { background: var(--card-hover, rgba(255,255,255,0.07)); }
+
+.smart-pl-icon {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.smart-pl-info { flex: 1; min-width:0; }
+.smart-pl-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+.smart-pl-count { font-size: 12px; color: var(--text-secondary); }
+.smart-pl-actions { display: flex; gap: 6px; }
+
+/* ââ Playlist modal: song already in list ââ */
+.modal-pl-btn.modal-pl-has { opacity: 0.55; }
+.modal-dup {
+  font-size: 11px;
+  margin-left: 6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ââ Mobile tweaks for new elements ââ */
+@media (max-width: 640px) {
+  .artist-link { font-size: 12px; }
+  .btn-sm-radio { font-size: 11px; padding: 4px 8px; }
+  .smart-pl { padding: 12px 14px; gap: 10px; }
+  .smart-pl-icon { width: 40px; height: 40px; font-size: 22px; }
+  .smart-pl-name { font-size: 14px; }
+  .because-label { font-size: 12px; }
 }
