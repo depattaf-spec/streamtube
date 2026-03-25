@@ -905,9 +905,8 @@ html, body {
   .btn-full { padding: 14px; font-size: 16px; }
 
   /* ââ App screen ââ */
-  #app-screen {
-    height: calc(100vh - var(--player-h) - var(--mobile-nav-h));
-  }
+  #app-screen { height: calc(100vh - var(--mobile-nav-h)); }
+  body.player-active #app-screen { height: calc(100vh - var(--player-h) - var(--mobile-nav-h)); }
 
   /* ââ Hide desktop sidebar ââ */
   #sidebar { display: none; }
@@ -919,10 +918,10 @@ html, body {
   .home-section { margin-bottom: 22px; }
 
   /* ââ Mobile bottom nav ââ */
-  #mobile-nav {
+  body.app-active #mobile-nav {
     display: flex;
     position: fixed;
-    bottom: var(--player-h);
+    bottom: 0;
     left: 0; right: 0;
     height: var(--mobile-nav-h);
     background: #111;
@@ -930,6 +929,7 @@ html, body {
     z-index: 102;
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  body.app-active.player-active #mobile-nav { bottom: var(--player-h); }
   .mob-nav-item {
     flex: 1;
     display: flex;
