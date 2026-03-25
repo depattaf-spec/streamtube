@@ -1263,3 +1263,70 @@ html, body {
   opacity: 0.6;
 }
 
+
+
+/* ── Artist Radio Badge ─────────────────────────────────────────── */
+.radio-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 2px 8px;
+  background: rgba(183,159,255,0.15);
+  border: 1px solid rgba(183,159,255,0.3);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  text-transform: uppercase;
+  animation: radioFadeIn 0.4s ease;
+}
+.radio-badge .material-symbols-outlined {
+  font-size: 14px;
+}
+@keyframes radioFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Unavailable Song Badge ─────────────────────────────────────── */
+.song-unavailable {
+  opacity: 0.6;
+  border-color: rgba(255,100,100,0.25) !important;
+}
+.song-unavailable .song-card-thumb {
+  filter: grayscale(0.6);
+}
+.unavail-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin: 6px 10px 0;
+  background: rgba(255,80,80,0.1);
+  border: 1px solid rgba(255,80,80,0.25);
+  border-radius: 8px;
+  color: #ff8080;
+  font-size: 0.72rem;
+  font-family: var(--font-body);
+}
+.unavail-badge .material-symbols-outlined {
+  font-size: 15px;
+}
+.btn-fix {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: rgba(183,159,255,0.15);
+  border: 1px solid rgba(183,159,255,0.35);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 0.7rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.2s;
+}
+.btn-fix:hover {
+  background: rgba(183,159,255,0.28);
+}
