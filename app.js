@@ -737,6 +737,14 @@ function removeFavorite(videoId) {
   ud.favorites = ud.favorites.filter(function(s) { return s.videoId !== videoId; });
   saveUserData(ud);
   renderFavorites();
+  // Reset player fav button if this was the current song
+  if (currentSong && currentSong.videoId === videoId) {
+    var btn = $('player-fav-btn');
+    if (btn) {
+      btn.innerHTML = '<span class="material-symbols-outlined">favorite_border</span>';
+      btn.classList.remove('active');
+    }
+  }
 }
 
 function renderFavorites() {
