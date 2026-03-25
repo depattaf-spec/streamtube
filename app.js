@@ -191,8 +191,8 @@ function switchTab(tab) {
   var view = $(tab + '-view');
   if (view) view.style.display = '';
   if (tab === 'home') loadHome();
-  if (tab === 'favorites') renderFavorites();
-  if (tab === 'playlists') renderPlaylists();
+  if (tab === 'favorites') { renderFavorites(); checkLibraryAvailability(); }
+  if (tab === 'playlists') { renderPlaylists(); checkLibraryAvailability(); }
 }
 
 function switchAuthTab(tab) {
@@ -221,9 +221,9 @@ function onYouTubeIframeAPIReady() {
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.PLAYING) {
     startProgressTracking();
-    $('play-pause-btn').textContent = '\u23F8';
+    $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">pause</span>';
   } else if (event.data === YT.PlayerState.PAUSED) {
-    $('play-pause-btn').textContent = '\u25B6';
+    $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
   } else if (event.data === YT.PlayerState.ENDED) {
     handleSongEnd();
   }
@@ -292,9 +292,9 @@ function toggleRepeat() {
   repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
   var btn = $('repeat-btn');
   btn.classList.toggle('active', repeatMode !== 'none');
-  if (repeatMode === 'none') { btn.textContent = '\uD83D\uDD01'; btn.title = 'Repeat: Off'; showToast('Repeat off'); }
-  if (repeatMode === 'one')  { btn.textContent = '\uD83D\uDD02'; btn.title = 'Repeat: One'; showToast('Repeat one song'); }
-  if (repeatMode === 'all')  { btn.textContent = '\uD83D\uDD01'; btn.title = 'Repeat: All'; showToast('Repeat all songs'); }
+  if (repeatMode === 'none') { btn.innerHTML = '<span class="material-symbols-outlined">repeat</span>'; btn.title = 'Repeat: Off'; showToast('Repeat off'); }
+  if (repeatMode === 'one')  { btn.innerHTML = '<span class="material-symbols-outlined">repeat_one</span>'; btn.title = 'Repeat: One'; showToast('Repeat one song'); }
+  if (repeatMode === 'all')  { btn.innerHTML = '<span class="material-symbols-outlined">repeat</span>'; btn.title = 'Repeat: All'; showToast('Repeat all songs'); }
 }
 
 function advanceQueue(dir) {
@@ -326,6 +326,7 @@ function playQueue(songs, startIndex) {
 
 function playSong(meta) {
   if (!meta) return;
+  setRadioBadge(''); // clear radio badge on manual play
   if (typeof meta === 'string') meta = { videoId: meta, title: 'Unknown', thumbnail: '', channel: '' };
   currentSong = meta;
   var idx = queue.findIndex(function(s) { return s.videoId === meta.videoId; });
@@ -334,7 +335,7 @@ function playSong(meta) {
   $('player-channel').textContent = meta.channel || '';
   $('player-thumb').src = meta.thumbnail || '';
   $('player-bar').style.display = 'flex'; document.body.classList.add('player-active');
-  $('play-pause-btn').textContent = '\u23F8';
+  $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">pause</span>';
   // Update fav button state
   var favBtn = $('player-fav-btn');
   if (favBtn) favBtn.textContent = isFavorite(meta.videoId) ? '\u2665' : '\u2661';
@@ -521,8 +522,8 @@ function loadFeaturedCollections() {
       '<div class="featured-card-header">' +
       '<span class="featured-label">' + esc(c.label) + '</span>' +
       '<div class="featured-actions">' +
-      '<button class="btn btn-sm-green" data-cid="' + esc(id) + '" onclick="playFeaturedCard(this.dataset.cid)">&#9654; Play All</button>' +
-      '<button class="btn btn-sm-ghost" data-cid="' + esc(id) + '" onclick="shuffleFeaturedCard(this.dataset.cid)">&#128256; Shuffle</button>' +
+      '<button class="btn btn-sm-green" data-cid="' + esc(id) + '" onclick="playFeaturedCard(this.dataset.cid)"><span class=\"material-symbols-outlined\">play_arrow</span> Play All</button>' +
+      '<button class="btn btn-sm-ghost" data-cid="' + esc(id) + '" onclick="shuffleFeaturedCard(this.dataset.cid)"><span class=\"material-symbols-outlined\">shuffle</span> Shuffle</button>' +
       '<button class="btn btn-sm-radio" data-cid="' + esc(id) + '" data-query="' + esc(c.query) + '" onclick="startGenreRadio(this.dataset.cid, this.dataset.query)">&#128251; Radio</button>' +
       '</div></div><div class="featured-songs-list"><div class="loading-mini">Loading\u2026</div></div></div>';
   }).join('');
@@ -589,7 +590,9 @@ function renderRecentlyPlayed() {
   container.innerHTML = recent.slice(0, 10).map(function(s) {
     return '<div class="recent-card" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(this.dataset.song))">' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
-      '<div class="recent-title">' + esc(s.title) + '</div></div>';
+      '<div class="recent-title">' + esc(s.title) + '</div>' +
+    (unavail ? '<div class="unavail-badge"><span class="material-symbols-outlined">warning</span> Unavailable <button class="btn-fix" data-vid="' + esc(s.videoId) + '" data-title="' + esc(s.title) + '" onclick="fixUnavailableSong(this.dataset.vid,this.dataset.title)">Find alt</button></div>' : '') +
+    '</div>';
   }).join('');
 }
 
@@ -658,8 +661,8 @@ function searchYouTube() {
       $('search-results').innerHTML =
         '<div class="results-header"><span>' + songs.length + ' results for <em>' + esc(query) + '</em></span>' +
         '<div class="results-actions">' +
-        '<button class="btn btn-sm-green" onclick="playAllResults()">&#9654; Play All</button>' +
-        '<button class="btn btn-sm-ghost" onclick="shuffleAllResults()">&#128256; Shuffle All</button>' +
+        '<button class="btn btn-sm-green" onclick="playAllResults()"><span class=\"material-symbols-outlined\">play_arrow</span> Play All</button>' +
+        '<button class="btn btn-sm-ghost" onclick="shuffleAllResults()"><span class=\"material-symbols-outlined\">shuffle</span> Shuffle All</button>' +
         '</div></div><div class="songs-grid">' + songs.map(function(s) { return songCard(s); }).join('') + '</div>';
       loadSearchSuggestions(query);
     })
@@ -701,14 +704,15 @@ function loadSearchSuggestions(query) {
 function songCard(s) {
   var ds = safeJson(s);
   var fav = isFavorite(s.videoId);
-  return '<div class="song-card">' +
+  var unavail = window._unavailableIds && window._unavailableIds[s.videoId];
+  return '<div class="song-card' + (unavail ? ' song-unavailable' : '') + '" data-vid="' + esc(s.videoId) + '">' +
     '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
     '<div class="card-info">' +
     '<div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
     '<button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button>' +
     '</div>' +
     '<div class="card-actions">' +
-    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))">&#9654; Play</button>' +
+    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
     '<button class="btn-card btn-fav-card' + (fav ? ' fav-active' : '') + '" data-song="' + ds + '" onclick="addFavorite(JSON.parse(this.dataset.song))" title="Favorite">' + (fav ? '&#9829;' : '&#9825;') + '</button>' +
     '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
     '</div></div>';
@@ -757,8 +761,8 @@ function renderFavorites() {
   container.innerHTML =
     '<div class="results-header"><span>' + ud.favorites.length + ' songs</span>' +
     '<div class="results-actions">' +
-    '<button class="btn btn-sm-green" onclick="playFavorites()">&#9654; Play All</button>' +
-    '<button class="btn btn-sm-ghost" onclick="shuffleFavorites()">&#128256; Shuffle</button>' +
+    '<button class="btn btn-sm-green" onclick="playFavorites()"><span class=\"material-symbols-outlined\">play_arrow</span> Play All</button>' +
+    '<button class="btn btn-sm-ghost" onclick="shuffleFavorites()"><span class=\"material-symbols-outlined\">shuffle</span> Shuffle</button>' +
     '</div></div><div class="songs-grid">' + ud.favorites.map(function(s) { return favCard(s); }).join('') + '</div>';
 }
 
@@ -771,9 +775,9 @@ function favCard(s) {
     '<button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button>' +
     '</div>' +
     '<div class="card-actions">' +
-    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))">&#9654; Play</button>' +
+    '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
     '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
-    '<button class="btn-card btn-danger" data-vid="' + esc(s.videoId) + '" onclick="removeFavorite(this.dataset.vid)">&#10005; Remove</button>' +
+    '<button class="btn-card btn-danger" data-vid="' + esc(s.videoId) + '" onclick="removeFavorite(this.dataset.vid)"><span class=\"material-symbols-outlined\">delete</span></button>' +
     '</div></div>';
 }
 
@@ -822,8 +826,8 @@ function buildSmartPlaylistCards(ud) {
       '<div class="pl-thumb smart-pl-icon">&#128337;</div>' +
       '<div class="pl-info"><div class="pl-name">Recently Played</div><div class="pl-count">' + recent.length + ' songs</div></div>' +
       '<div class="pl-actions">' +
-      '<button class="btn-card btn-card-play" onclick="playSmartPlaylist(\'recent\')">&#9654; Play</button>' +
-      '<button class="btn-card" onclick="shuffleSmartPlaylist(\'recent\')">&#128256;</button>' +
+      '<button class="btn-card btn-card-play" onclick="playSmartPlaylist(\'recent\')"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
+      '<button class="btn-card" onclick="shuffleSmartPlaylist(\'recent\')"><span class=\"material-symbols-outlined\">shuffle</span></button>' +
       '</div></div>'
     );
   }
@@ -845,8 +849,8 @@ function buildSmartPlaylistCards(ud) {
         '<div class="pl-thumb smart-pl-icon">&#128293;</div>' +
         '<div class="pl-info"><div class="pl-name">Most Played</div><div class="pl-count">' + topSongs.length + ' songs</div></div>' +
         '<div class="pl-actions">' +
-        '<button class="btn-card btn-card-play" onclick="playSmartPlaylist(\'top\')">&#9654; Play</button>' +
-        '<button class="btn-card" onclick="shuffleSmartPlaylist(\'top\')">&#128256;</button>' +
+        '<button class="btn-card btn-card-play" onclick="playSmartPlaylist(\'top\')"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
+        '<button class="btn-card" onclick="shuffleSmartPlaylist(\'top\')"><span class=\"material-symbols-outlined\">shuffle</span></button>' +
         '</div></div>'
       );
     }
@@ -889,9 +893,9 @@ function playlistCard(pl, i) {
     '<div class="pl-info"><div class="pl-name">' + esc(pl.name) + '</div>' +
     '<div class="pl-count">' + (pl.songs ? pl.songs.length : 0) + ' songs</div></div>' +
     '<div class="pl-actions">' +
-    '<button class="btn-card btn-card-play" onclick="event.stopPropagation();playPlaylist(' + i + ')">&#9654; Play</button>' +
-    '<button class="btn-card" onclick="event.stopPropagation();shufflePlaylist(' + i + ')">&#128256;</button>' +
-    '<button class="btn-card btn-danger" onclick="event.stopPropagation();deletePlaylist(' + i + ')">&#10005;</button>' +
+    '<button class="btn-card btn-card-play" onclick="event.stopPropagation();playPlaylist(' + i + ')"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
+    '<button class="btn-card" onclick="event.stopPropagation();shufflePlaylist(' + i + ')"><span class=\"material-symbols-outlined\">shuffle</span></button>' +
+    '<button class="btn-card btn-danger" onclick="event.stopPropagation();deletePlaylist(' + i + ')"><span class=\"material-symbols-outlined\">close</span></button>' +
     '</div></div>';
 }
 
@@ -931,8 +935,12 @@ function viewPlaylist(i) {
           '<div class="card-info"><div class="card-title">' + esc(s.title) + '</div>' +
           '<button class="artist-link" data-artist="' + esc(s.channel) + '" onclick="event.stopPropagation();searchArtist(this.dataset.artist)">' + esc(s.channel) + '</button></div>' +
           '<div class="card-actions">' +
-          '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))">&#9654; Play</button>' +
-          '<button class="btn-card btn-danger" onclick="removeSongFromPlaylist(' + i + ',' + j + ')">&#10005;</button>' +
+          (window._unavailableIds && window._unavailableIds[s.videoId]
+          ? '<span class="unavail-badge"><span class=\"material-symbols-outlined\">warning</span></span>' +
+            '<button class="btn-card btn-fix" data-vid="' + esc(s.videoId) + '" data-title="' + esc(s.title) + '" data-ch="' + esc(s.channel) + '" onclick="fixUnavailableSong(this.dataset.vid,this.dataset.title,this.dataset.ch)"><span class=\"material-symbols-outlined\">find_replace</span></button>'
+          : '') +
+          '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
+          '<button class="btn-card btn-danger" onclick="removeSongFromPlaylist(' + i + ',' + j + ')"><span class=\"material-symbols-outlined\">close</span></button>' +
           '</div></div>';
       }).join('')
     : '<div class="empty-state"><h3>Empty playlist</h3><p>Add songs using &quot;+ List&quot;.</p></div>';
@@ -941,8 +949,8 @@ function viewPlaylist(i) {
     '<button class="btn-back" onclick="switchTab(&quot;playlists&quot;)">&#8592; Playlists</button>' +
     '<h2>' + esc(pl.name) + '</h2>' +
     '<div class="detail-actions">' +
-    '<button class="btn btn-sm-green" onclick="playPlaylist(' + i + ')">&#9654; Play All</button>' +
-    '<button class="btn btn-sm-ghost" onclick="shufflePlaylist(' + i + ')">&#128256; Shuffle</button>' +
+    '<button class="btn btn-sm-green" onclick="playPlaylist(' + i + ')"><span class=\"material-symbols-outlined\">play_arrow</span> Play All</button>' +
+    '<button class="btn btn-sm-ghost" onclick="shufflePlaylist(' + i + ')"><span class=\"material-symbols-outlined\">shuffle</span> Shuffle</button>' +
     '</div></div><div class="songs-grid">' + songsHtml + '</div>';
 }
 
@@ -1027,3 +1035,87 @@ fetch('/api/firebase-config')
     initAuth();
   })
   .catch(function(err) { console.error('Firebase config load failed:', err); });
+
+// ── Artist Radio Badge ──────────────────────────────────────────
+function setRadioBadge(text) {
+  var badge = $('radio-badge');
+  if (!badge) return;
+  badge.textContent = text;
+  badge.style.display = text ? 'block' : 'none';
+}
+
+// ── Availability Check ─────────────────────────────────────────
+window._unavailableIds = {};
+
+function checkLibraryAvailability() {
+  var ud = getUserData();
+  var allSongs = (ud.favorites || []).slice();
+  (ud.playlists || []).forEach(function(pl) {
+    allSongs = allSongs.concat(pl.songs || []);
+  });
+  var ids = [];
+  var seen = {};
+  allSongs.forEach(function(s) {
+    if (s && s.videoId && !seen[s.videoId]) { ids.push(s.videoId); seen[s.videoId] = true; }
+  });
+  if (!ids.length) return;
+
+  // Check in batches of 50
+  var batches = [];
+  for (var i = 0; i < ids.length; i += 50) batches.push(ids.slice(i, i + 50));
+
+  Promise.all(batches.map(function(batch) {
+    return fetch('/api/check?ids=' + batch.join(','))
+      .then(function(r) { return r.json(); })
+      .catch(function() { return { available: {} }; });
+  })).then(function(results) {
+    var unavailable = {};
+    results.forEach(function(res) {
+      Object.keys(res.available || {}).forEach(function(id) {
+        if (!res.available[id]) unavailable[id] = true;
+      });
+    });
+    window._unavailableIds = unavailable;
+    var count = Object.keys(unavailable).length;
+    if (count > 0) {
+      // Re-render active view to show badges
+      if ($('favorites-view') && $('favorites-view').style.display !== 'none') renderFavorites();
+      if ($('playlists-view') && $('playlists-view').style.display !== 'none') renderPlaylists();
+      showToast(count + ' song' + (count > 1 ? 's' : '') + ' unavailable in your library');
+    }
+  });
+}
+
+// ── Fallback Search ────────────────────────────────────────────
+function fixUnavailableSong(videoId, title, channel) {
+  var query = (channel ? channel + ' - ' : '') + title;
+  showToast('Finding replacement…');
+  fetch('/api/search?q=' + encodeURIComponent(query))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var alt = (data.items || []).find(function(item) {
+        return item.id && item.id.videoId && item.id.videoId !== videoId;
+      });
+      if (!alt) { showToast('No replacement found'); return; }
+      var newSong = {
+        videoId: alt.id.videoId,
+        title: alt.snippet.title,
+        thumbnail: ((alt.snippet.thumbnails.medium || alt.snippet.thumbnails.default) || {}).url || '',
+        channel: alt.snippet.channelTitle
+      };
+      var ud = getUserData();
+      // Replace in favorites
+      var fi = (ud.favorites || []).findIndex(function(s) { return s.videoId === videoId; });
+      if (fi >= 0) ud.favorites[fi] = newSong;
+      // Replace in all playlists
+      (ud.playlists || []).forEach(function(pl) {
+        var pi = (pl.songs || []).findIndex(function(s) { return s.videoId === videoId; });
+        if (pi >= 0) pl.songs[pi] = newSong;
+      });
+      saveUserData(ud);
+      delete window._unavailableIds[videoId];
+      showToast('Replaced: ' + newSong.title.substring(0, 35) + '…');
+      renderFavorites();
+    })
+    .catch(function() { showToast('Could not find replacement'); });
+}
