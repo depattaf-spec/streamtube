@@ -1,5 +1,5 @@
 // ================================================================
-// FredTube v3.1 â app.js (Firebase Edition)
+// Fredify v3.1 â app.js (Firebase Edition)
 // Features: Media Session, Artist Radio, Crossfade, Artist Pages,
 //           Because You Liked, Genre Radio, Smart Playlists, Dup Detection
 // ================================================================
