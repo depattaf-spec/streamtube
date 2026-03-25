@@ -7,18 +7,22 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Fredify" />
-  <meta name="theme-color" content="#0d0d0d" />
+  <meta name="theme-color" content="#060e20" />
   <title>Fredify</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231db954'/%3E%3Ctext x='16' y='23' text-anchor='middle' fill='%23000' font-family='Arial%2Csans-serif' font-weight='900' font-size='21'%3EF%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231db954'/%3E%3Ctext x='16' y='23' text-anchor='middle' fill='%23000' font-family='Arial%2Csans-serif' font-weight='900' font-size='21'%3EF%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
 </head>
 <body>
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">♫ Fredify</div>
+    <div class="auth-logo">Fredify</div>
     <div class="auth-tabs">
       <button id="login-tab" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
       <button id="signup-tab" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
@@ -27,13 +31,13 @@
       <input id="login-email" type="email" placeholder="Email" autocomplete="email" inputmode="email" />
       <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" />
       <p id="login-error" class="form-error"></p>
-      <button class="btn btn-green btn-full" onclick="login()">Sign In</button>
+      <button class="btn btn-accent btn-full" onclick="login()">Sign In</button>
     </div>
     <div id="signup-form" class="auth-form" style="display:none">
       <input id="signup-email" type="email" placeholder="Email" autocomplete="email" inputmode="email" />
       <input id="signup-pass" type="password" placeholder="Password" autocomplete="new-password" />
       <p id="signup-error" class="form-error"></p>
-      <button class="btn btn-green btn-full" onclick="signup()">Create Account</button>
+      <button class="btn btn-accent btn-full" onclick="signup()">Create Account</button>
     </div>
   </div>
 </div>
@@ -43,23 +47,23 @@
 
   <!-- SIDEBAR (desktop only) -->
   <nav id="sidebar">
-    <div class="sidebar-logo">♫ Fredify</div>
+    <div class="sidebar-logo">Fredify</div>
     <ul class="nav-list">
       <li id="home-tab" class="nav-item" onclick="switchTab('home')">
-        <span class="nav-icon">🏠</span> Home
+        <span class="material-symbols-outlined nav-icon">home</span> Home
       </li>
       <li id="search-tab" class="nav-item" onclick="switchTab('search')">
-        <span class="nav-icon">🔍</span> Search
+        <span class="material-symbols-outlined nav-icon">search</span> Search
       </li>
       <li id="favorites-tab" class="nav-item" onclick="switchTab('favorites')">
-        <span class="nav-icon">❤️</span> Favorites
+        <span class="material-symbols-outlined nav-icon">favorite</span> Favorites
       </li>
       <li id="playlists-tab" class="nav-item" onclick="switchTab('playlists')">
-        <span class="nav-icon">📋</span> Playlists
+        <span class="material-symbols-outlined nav-icon">queue_music</span> Playlists
       </li>
     </ul>
     <div class="sidebar-user">
-      <span class="user-icon">👤</span>
+      <span class="material-symbols-outlined user-icon">person</span>
       <span id="user-email" class="user-email-text"></span>
       <button class="btn-signout" onclick="logout()">Sign out</button>
     </div>
@@ -132,7 +136,7 @@
       <div id="player-title" class="player-title">Nothing playing</div>
       <div id="player-channel" class="player-channel"></div>
     </div>
-    <button class="btn-fav-player" id="player-fav-btn" onclick="favCurrentSong()" title="Add to favorites">♡</button>
+    <button class="btn-fav-player" id="player-fav-btn" onclick="favCurrentSong()" title="Add to favorites"><span class="material-symbols-outlined">favorite_border</span></button>
   </div>
   <div class="player-center">
     <div class="control-row">
@@ -159,13 +163,13 @@
 <!-- MOBILE BOTTOM NAV -->
 <nav id="mobile-nav">
   <button class="mob-nav-item" id="mob-home-tab" onclick="switchTab('home')">
-    <span class="mob-icon">🏠</span><span class="mob-label">Home</span>
+    <span class="material-symbols-outlined mob-icon">home</span><span class="mob-label">Home</span>
   </button>
   <button class="mob-nav-item" id="mob-search-tab" onclick="switchTab('search')">
-    <span class="mob-icon">🔍</span><span class="mob-label">Search</span>
+    <span class="material-symbols-outlined mob-icon">search</span><span class="mob-label">Search</span>
   </button>
   <button class="mob-nav-item" id="mob-favorites-tab" onclick="switchTab('favorites')">
-    <span class="mob-icon">❤️</span><span class="mob-label">Favorites</span>
+    <span class="material-symbols-outlined mob-icon">favorite</span><span class="mob-label">Favorites</span>
   </button>
   <button class="mob-nav-item" id="mob-playlists-tab" onclick="switchTab('playlists')">
     <span class="mob-icon">📋</span><span class="mob-label">Playlists</span>
