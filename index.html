@@ -135,16 +135,17 @@
     <div class="player-text">
       <div id="player-title" class="player-title">Nothing playing</div>
       <div id="player-channel" class="player-channel"></div>
+    <div id="radio-badge" class="radio-badge" style="display:none"><span class="material-symbols-outlined">radio</span> Artist Radio</div>
     </div>
     <button class="btn-fav-player" id="player-fav-btn" onclick="favCurrentSong()" title="Add to favorites"><span class="material-symbols-outlined">favorite_border</span></button>
   </div>
   <div class="player-center">
     <div class="control-row">
-      <button id="shuffle-btn" class="ctrl-btn" onclick="toggleShuffle()" title="Shuffle">🔀</button>
-      <button class="ctrl-btn" onclick="advanceQueue(-1)" title="Previous">⏮</button>
-      <button id="play-pause-btn" class="ctrl-btn ctrl-play" onclick="togglePlayPause()">▶</button>
-      <button class="ctrl-btn" onclick="advanceQueue(1)" title="Next">⏭</button>
-      <button id="repeat-btn" class="ctrl-btn" onclick="toggleRepeat()" title="Repeat: Off">🔁</button>
+      <button id="shuffle-btn" class="ctrl-btn" onclick="toggleShuffle()" title="Shuffle"><span class="material-symbols-outlined">shuffle</span></button>
+      <button class="ctrl-btn" onclick="advanceQueue(-1)" title="Previous"><span class="material-symbols-outlined">skip_previous</span></button>
+      <button id="play-pause-btn" class="ctrl-btn ctrl-play" onclick="togglePlayPause()"><span class="material-symbols-outlined">play_arrow</span></button>
+      <button class="ctrl-btn" onclick="advanceQueue(1)" title="Next"><span class="material-symbols-outlined">skip_next</span></button>
+      <button id="repeat-btn" class="ctrl-btn" onclick="toggleRepeat()" title="Repeat: Off"><span class="material-symbols-outlined">repeat</span></button>
     </div>
     <div class="progress-row">
       <span id="time-current" class="time-label">0:00</span>
