@@ -136,7 +136,7 @@ function logout() {
   queueIndex = -1;
   genreRadioQuery = null;
   if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
-  $('player-bar').style.display = 'none';
+  $('player-bar').style.display = 'none'; document.body.classList.remove('player-active');
   auth.signOut();
 }
 
@@ -333,7 +333,7 @@ function playSong(meta) {
   $('player-title').textContent = meta.title || 'Unknown';
   $('player-channel').textContent = meta.channel || '';
   $('player-thumb').src = meta.thumbnail || '';
-  $('player-bar').style.display = 'flex';
+  $('player-bar').style.display = 'flex'; document.body.classList.add('player-active');
   $('play-pause-btn').textContent = '\u23F8';
   // Update fav button state
   var favBtn = $('player-fav-btn');
