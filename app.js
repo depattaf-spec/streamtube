@@ -235,7 +235,8 @@ function onPlayerStateChange(event) {
   } else if (event.data === YT.PlayerState.ENDED) {
     clearStartupWatchdog();
     handleSongEnd();
-  } else if (event.data === YT.PlayerState.BUFFERING) {
+      advanceQueue(1);
+} else if (event.data === YT.PlayerState.BUFFERING) {
     $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span>';
   } else if (event.data === -1) {
     // UNSTARTED — arm startup watchdog: skip if no PLAYING within 9s
@@ -357,7 +358,7 @@ function advanceQueue(dir) {
   // Restore volume after crossfade
   if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(100);
 
-  if (!queue.length) return;
+  
   var next = queueIndex + dir;
   if (next >= queue.length) {
     if (repeatMode === 'all') { next = 0; }
