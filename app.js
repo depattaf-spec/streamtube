@@ -1176,8 +1176,21 @@ function fixUnavailableSong(videoId, title, channel) {
 
 
 // ─── Video expand overlay ───
+// backdrop-filter on #player-bar creates a containing block that breaks fixed
+// positioning for children. Fix: teleport #yt-thumb to <body> when expanding.
 function toggleVideoExpand() {
-  document.body.classList.toggle('video-expanded');
+  var thumb = document.getElementById('yt-thumb');
+  if (!document.body.classList.contains('video-expanded')) {
+    thumb._origParent = thumb.parentElement;
+    thumb._origNext   = thumb.nextSibling;
+    document.body.appendChild(thumb);
+    document.body.classList.add('video-expanded');
+  } else {
+    document.body.classList.remove('video-expanded');
+    if (thumb._origParent) {
+      thumb._origParent.insertBefore(thumb, thumb._origNext || null);
+    }
+  }
 }
 
 (function() {
