@@ -1189,7 +1189,7 @@ function toggleVideoExpand() {
     document.body.appendChild(thumb);
     document.body.classList.add('video-expanded');
   } else {
-    toggleVideoExpand();
+    document.body.classList.remove('video-expanded');
     if (thumb._origParent) {
       thumb._origParent.insertBefore(thumb, thumb._origNext || null);
     }
@@ -1207,7 +1207,4 @@ function toggleVideoExpand() {
   }
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.body.classList.contains('video-expanded')) {
-      document.body.classList.remove('video-expanded');
-    }
-  });
-})();
+      document.body.toggleVideoExpand();)();
