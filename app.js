@@ -235,7 +235,6 @@ function onPlayerStateChange(event) {
   } else if (event.data === YT.PlayerState.ENDED) {
     clearStartupWatchdog();
     handleSongEnd();
-      advanceQueue(1);
 } else if (event.data === YT.PlayerState.BUFFERING) {
     $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span>';
   } else if (event.data === -1) {
@@ -252,10 +251,11 @@ function onPlayerError(event) {
             'Playback error';
   showToast(msg + ' — skipping…');
   $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
-  setTimeout(function() { advanceQueue(1); }, 1800);
+  _errorSkipTimer = setTimeout(function() { advanceQueue(1); }, 1800);
 }
 
 var _startupWatchdog = null;
+var _errorSkipTimer  = null;
 function armStartupWatchdog() {
   clearStartupWatchdog();
   _startupWatchdog = setTimeout(function() {
@@ -351,6 +351,7 @@ function toggleRepeat() {
 }
 
 function advanceQueue(dir) {
+  clearTimeout(_errorSkipTimer);
   // Reset crossfade state on any queue advance
   crossfadeActive  = false;
   crossfadeStarted = false;
@@ -360,6 +361,7 @@ function advanceQueue(dir) {
 
   
   var next = queueIndex + dir;
+  if (next < 0) next = 0;
   if (next >= queue.length) {
     if (repeatMode === 'all') { next = 0; }
     else if (genreRadioQuery) { genreRadio(); return; }
@@ -1187,7 +1189,7 @@ function toggleVideoExpand() {
     document.body.appendChild(thumb);
     document.body.classList.add('video-expanded');
   } else {
-    document.body.classList.remove('video-expanded');
+    toggleVideoExpand();
     if (thumb._origParent) {
       thumb._origParent.insertBefore(thumb, thumb._origNext || null);
     }
