@@ -172,6 +172,11 @@ function showApp() {
   document.body.classList.add('app-active');
   $('user-email').textContent = currentUser;
   switchTab('home');
+  // YT API often fires onYouTubeIframeAPIReady before login (app-screen hidden).
+  // Re-init the player now that the DOM is visible.
+  if (typeof YT !== 'undefined' && YT.Player && !ytReady) {
+    onYouTubeIframeAPIReady();
+  }
 }
 
 function switchTab(tab) {
