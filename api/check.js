@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store');
 
@@ -10,13 +10,15 @@ export default async function handler(req, res) {
     try {
       const r = await fetch(
         `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' } }
+        { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'follow' }
       );
-      available[id] = r.ok;
+      // Only mark unavailable on a definitive 404 (deleted/private).
+      // 403/429/5xx are likely IP-level blocks - treat as available.
+      available[id] = r.status !== 404;
     } catch (e) {
-      available[id] = false;
+      available[id] = true; // network error -> assume available
     }
   }));
 
   return res.json({ available });
-}
+};
