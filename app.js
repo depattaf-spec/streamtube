@@ -1173,3 +1173,25 @@ function fixUnavailableSong(videoId, title, channel) {
     })
     .catch(function() { showToast('Could not find replacement'); });
 }
+
+
+// ─── Video expand overlay ───
+function toggleVideoExpand() {
+  document.body.classList.toggle('video-expanded');
+}
+
+(function() {
+  var thumb = document.getElementById('yt-thumb');
+  if (thumb) {
+    thumb.addEventListener('click', function() {
+      if (!document.body.classList.contains('video-expanded')) {
+        toggleVideoExpand();
+      }
+    });
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.body.classList.contains('video-expanded')) {
+      document.body.classList.remove('video-expanded');
+    }
+  });
+})();
