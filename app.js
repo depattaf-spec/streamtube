@@ -161,6 +161,11 @@ function saveUserData(data) {
 // ââ Views âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function showAuth() {
+  // Stop playback and clear all intervals on logout
+  if (ytPlayer) { try { ytPlayer.stopVideo(); } catch(e) {} }
+  clearInterval(progressInterval);
+  clearInterval(crossfadeTimer);
+  crossfadeStarted = false;
   $('auth-screen').style.display = 'flex';
   $('app-screen').style.display = 'none';
   document.body.classList.remove('app-active');
@@ -380,6 +385,10 @@ function playQueue(songs, startIndex) {
 }
 
 function playSong(meta) {
+  // Cancel any in-progress crossfade so it doesn't bleed into the new song
+  clearInterval(crossfadeTimer);
+  crossfadeStarted = false;
+  if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(100);
   if (!meta) return;
   setRadioBadge(''); // clear radio badge on manual play
   if (typeof meta === 'string') meta = { videoId: meta, title: 'Unknown', thumbnail: '', channel: '' };
