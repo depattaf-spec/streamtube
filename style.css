@@ -802,12 +802,11 @@ html, body {
 }
 
 #yt-player {
-  width: 128px;
-  height: 72px;
+  width: 100%;
+  height: 100%;
   border-radius: 4px;
   overflow: hidden;
   background: #000;
-  flex-shrink: 0;
 }
 
 .btn-queue-toggle {
@@ -1341,3 +1340,59 @@ html, body {
   animation: spin 0.9s linear infinite;
   opacity: 0.7;
 }
+
+
+/* ─── Video expand overlay ─── */
+#yt-thumb {
+  width: 128px;
+  height: 72px;
+  position: relative;
+  cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.yt-expand-hint {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  text-shadow: 0 0 4px rgba(0,0,0,0.9);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+#yt-thumb:hover .yt-expand-hint { opacity: 1; }
+
+#video-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  z-index: 999;
+  cursor: pointer;
+}
+body.video-expanded #video-backdrop { display: block; }
+
+body.video-expanded #yt-thumb {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(85vw, 1200px);
+  height: calc(min(85vw, 1200px) * 9 / 16);
+  z-index: 1000;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: default;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.8);
+}
+body.video-expanded #yt-player,
+body.video-expanded #yt-player iframe {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+body.video-expanded .yt-expand-hint { display: none; }
