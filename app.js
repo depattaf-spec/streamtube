@@ -590,9 +590,7 @@ function renderRecentlyPlayed() {
   container.innerHTML = recent.slice(0, 10).map(function(s) {
     return '<div class="recent-card" data-song="' + safeJson(s) + '" onclick="playSong(JSON.parse(this.dataset.song))">' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
-      '<div class="recent-title">' + esc(s.title) + '</div>' +
-    (unavail ? '<div class="unavail-badge"><span class="material-symbols-outlined">warning</span> Unavailable <button class="btn-fix" data-vid="' + esc(s.videoId) + '" data-title="' + esc(s.title) + '" onclick="fixUnavailableSong(this.dataset.vid,this.dataset.title)">Find alt</button></div>' : '') +
-    '</div>';
+      '<div class="recent-title">' + esc(s.title) + '</div></div>';
   }).join('');
 }
 
@@ -768,7 +766,8 @@ function renderFavorites() {
 
 function favCard(s) {
   var ds = safeJson(s);
-  return '<div class="song-card">' +
+  var unavail = window._unavailableIds && window._unavailableIds[s.videoId];
+  return '<div class="song-card' + (unavail ? ' song-unavailable' : '') + '" data-vid="' + esc(s.videoId) + '">' +
     '<img class="song-card-thumb" src="' + esc(s.thumbnail) + '" alt="">' +
     '<div class="card-info">' +
     '<div class="card-title" title="' + esc(s.title) + '">' + esc(s.title) + '</div>' +
@@ -778,7 +777,9 @@ function favCard(s) {
     '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
     '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
     '<button class="btn-card btn-danger" data-vid="' + esc(s.videoId) + '" onclick="removeFavorite(this.dataset.vid)"><span class=\"material-symbols-outlined\">delete</span></button>' +
-    '</div></div>';
+    '</div>' +
+    (unavail ? '<div class="unavail-badge"><span class="material-symbols-outlined">warning</span> Unavailable <button class="btn-fix" data-vid="' + esc(s.videoId) + '" data-title="' + esc(s.title) + '" onclick="fixUnavailableSong(this.dataset.vid,this.dataset.title)">Find alt</button></div>' : '') +
+    '</div>';
 }
 
 function playFavorites() {
