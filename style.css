@@ -830,7 +830,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
+  z-index: 1001;
   backdrop-filter: blur(4px);
 }
 
