@@ -156,7 +156,10 @@
     </div>
   </div>
   <div class="player-right">
-    <div id="yt-player"></div>
+    <div id="yt-thumb" title="Click to expand video">
+      <div id="yt-player"></div>
+      <span class="material-symbols-outlined yt-expand-hint">fullscreen</span>
+    </div>
     <button class="btn-queue-toggle" onclick="toggleQueuePanel()" title="Queue">☰</button>
   </div>
 </div>
@@ -185,5 +188,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="app.js?v=6"></script>
+  <div id="video-backdrop" onclick="toggleVideoExpand()"></div>
 </body>
 </html>
