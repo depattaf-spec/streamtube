@@ -213,6 +213,7 @@ function onYouTubeIframeAPIReady() {
     playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, origin: window.location.origin },
     events: {
       onStateChange: onPlayerStateChange,
+      onError: onPlayerError,
       onReady: function() {}
     }
   });
@@ -220,13 +221,47 @@ function onYouTubeIframeAPIReady() {
 
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.PLAYING) {
+    clearStartupWatchdog();
     startProgressTracking();
     $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">pause</span>';
   } else if (event.data === YT.PlayerState.PAUSED) {
+    clearStartupWatchdog();
     $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
   } else if (event.data === YT.PlayerState.ENDED) {
+    clearStartupWatchdog();
     handleSongEnd();
+  } else if (event.data === YT.PlayerState.BUFFERING) {
+    $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span>';
+  } else if (event.data === -1) {
+    // UNSTARTED — arm startup watchdog: skip if no PLAYING within 9s
+    armStartupWatchdog();
   }
+}
+
+function onPlayerError(event) {
+  clearStartupWatchdog();
+  // 2=invalid id, 5=HTML5 error, 100=not found/private, 101/150=embed disabled
+  var msg = (event.data === 100) ? 'Video not found or private' :
+            (event.data === 101 || event.data === 150) ? 'Embedding not allowed' :
+            'Playback error';
+  showToast(msg + ' — skipping…');
+  $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+  setTimeout(function() { advanceQueue(1); }, 1800);
+}
+
+var _startupWatchdog = null;
+function armStartupWatchdog() {
+  clearStartupWatchdog();
+  _startupWatchdog = setTimeout(function() {
+    if (ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+      showToast('Song took too long to start — skipping…');
+      $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+      advanceQueue(1);
+    }
+  }, 9000);
+}
+function clearStartupWatchdog() {
+  if (_startupWatchdog) { clearTimeout(_startupWatchdog); _startupWatchdog = null; }
 }
 
 function handleSongEnd() {
@@ -239,9 +274,21 @@ function handleSongEnd() {
 function startProgressTracking() {
   clearInterval(progressInterval);
   crossfadeStarted = false;
+  var _lastPos = -1, _stallTicks = 0;
   progressInterval = setInterval(function() {
     if (!ytPlayer || !ytPlayer.getCurrentTime) return;
     var cur = ytPlayer.getCurrentTime() || 0;
+    // Stall watchdog: if position hasn't moved for 10s while not paused, skip
+    var state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
+    if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) {
+      if (Math.abs(cur - _lastPos) < 0.1) { _stallTicks++; } else { _stallTicks = 0; }
+      if (_stallTicks > 20) { // 10s stalled (interval=500ms)
+        _stallTicks = 0;
+        showToast('Song stalled — skipping…');
+        advanceQueue(1); return;
+      }
+    } else { _stallTicks = 0; }
+    _lastPos = cur;
     var dur = ytPlayer.getDuration() || 0;
     if (dur > 0) {
       $('progress-fill').style.width = (cur / dur * 100) + '%';
@@ -338,7 +385,7 @@ function playSong(meta) {
   $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">pause</span>';
   // Update fav button state
   var favBtn = $('player-fav-btn');
-  if (favBtn) favBtn.textContent = isFavorite(meta.videoId) ? '\u2665' : '\u2661';
+  if (favBtn) favBtn.innerHTML = isFavorite(meta.videoId) ? '<span class="material-symbols-outlined" style="color:var(--accent)">favorite</span>' : '<span class="material-symbols-outlined">favorite_border</span>';
   renderQueueList();
 
   // Media Session API â enables lock screen controls + Now Playing widget
@@ -357,24 +404,25 @@ function playSong(meta) {
   }
 
   function doLoad() {
-    // Crossfade fade-in: ramp volume 0 â 100 over ~2s
-    if (ytPlayer.setVolume) ytPlayer.setVolume(0);
+    if (ytPlayer.setVolume) ytPlayer.setVolume(100);
     ytPlayer.loadVideoById(meta.videoId);
-    var v = 0;
-    var fi = setInterval(function() {
-      v = Math.min(100, v + 10);
-      if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(v);
-      if (v >= 100) clearInterval(fi);
-    }, 200);
   }
 
   if (ytPlayer && ytPlayer.loadVideoById) {
     doLoad();
   } else {
+    var tries = 0;
     var check = setInterval(function() {
+      tries++;
       if (ytPlayer && ytPlayer.loadVideoById) { clearInterval(check); doLoad(); }
+      else if (tries > 40) {
+        clearInterval(check);
+        showToast('Player failed to load — try refreshing.');
+        $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+      }
     }, 200);
   }
+
   addToRecentlyPlayed(meta);
 }
 
