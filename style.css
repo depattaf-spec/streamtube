@@ -1406,3 +1406,124 @@ body.video-expanded #yt-player iframe {
   display: block;
 }
 body.video-expanded .yt-expand-hint { display: none; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEW FEATURES — v7
+   Play Next · Drag Queue · Clear Queue · Seek Drag · Search History · Colour BG
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Queue: drag handle ─────────────────────────────────────────────────── */
+.queue-drag-handle {
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: grab;
+  flex-shrink: 0;
+  padding: 0 2px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+.queue-item:hover .queue-drag-handle { opacity: 1; }
+.queue-drag-handle:active { cursor: grabbing; }
+
+/* ── Queue: drag-over indicator ─────────────────────────────────────────── */
+.queue-item-drag-over {
+  border-top: 2px solid var(--accent) !important;
+}
+
+/* ── Queue: play-next button inside items ───────────────────────────────── */
+.queue-item-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.queue-item:hover .queue-item-actions { opacity: 1; }
+.queue-play-next-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+.queue-play-next-btn .material-symbols-outlined { font-size: 16px; }
+.queue-play-next-btn:hover { color: var(--accent); background: rgba(183,159,255,0.1); }
+
+/* ── Queue: header actions (clear + close) ──────────────────────────────── */
+.queue-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.queue-clear-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 5px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.queue-clear-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Seek drag: cursor while dragging ───────────────────────────────────── */
+body.seeking,
+body.seeking * { cursor: col-resize !important; }
+
+/* ── Search history dropdown ────────────────────────────────────────────── */
+.search-history {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.sh-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.sh-item:hover { background: var(--surface3); }
+.sh-icon { font-size: 16px; color: var(--text-muted); }
+.sh-text { font-size: 0.9rem; color: var(--text); flex: 1; }
+.sh-clear {
+  text-align: center;
+  padding: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+  transition: color 0.15s;
+}
+.sh-clear:hover { color: var(--danger); }
+
+/* ── Colour-extracted player background ─────────────────────────────────── */
+#player-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 55% 100% at 0% 50%,
+    rgba(var(--player-accent-rgb, 9,15,36), 0.55), transparent);
+  pointer-events: none;
+  z-index: 0;
+  transition: background 1.2s ease;
+  border-radius: inherit;
+}
+.player-info,
+.player-center,
+.player-right { position: relative; z-index: 1; }
+
+/* ── Play-next button on song cards ─────────────────────────────────────── */
+.btn-card[title="Play next"] .material-symbols-outlined { font-size: 15px; }
