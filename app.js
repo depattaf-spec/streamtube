@@ -411,6 +411,7 @@ function playSong(meta) {
   $('player-title').textContent = meta.title || 'Unknown';
   $('player-channel').textContent = meta.channel || '';
   $('player-thumb').src = meta.thumbnail || '';
+  extractPlayerColor(meta.thumbnail);
   $('player-bar').style.display = 'flex'; document.body.classList.add('player-active');
   $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">pause</span>';
   // Update fav button state
@@ -561,11 +562,15 @@ function renderQueueList() {
   if (!queue.length) { list.innerHTML = '<div class="queue-empty">Queue is empty</div>'; return; }
   list.innerHTML = queue.map(function(s, i) {
     var cls = 'queue-item' + (i === queueIndex ? ' queue-item-active' : '');
-    return '<div class="' + cls + '" onclick="queueJump(' + i + ')">' +
+    return '<div class="' + cls + '" draggable="true" ondragstart="queueDragStart(' + i + ')" ondragover="event.preventDefault();queueDragOver(event,' + i + ')" ondrop="event.preventDefault();queueDrop(' + i + ')" ondragend="queueDragEnd()" onclick="queueJump(' + i + ')">' +
+      '<span class="material-symbols-outlined queue-drag-handle" onclick="event.stopPropagation()">drag_indicator</span>' +
       '<img src="' + esc(s.thumbnail) + '" alt="">' +
       '<div class="queue-item-info">' +
       '<div class="queue-item-title">' + esc(s.title) + '</div>' +
       '<div class="queue-item-ch">' + esc(s.channel) + '</div></div>' +
+      '<div class="queue-item-actions">' +
+      (i !== queueIndex ? '<button class="queue-play-next-btn" onclick="event.stopPropagation();queuePlayNext(' + i + ')" title="Play next"><span class="material-symbols-outlined">queue_play_next</span></button>' : '') +
+      '</div>' +
       (i === queueIndex ? '<span class="now-badge">NOW</span>' : '') +
       '</div>';
   }).join('');
@@ -713,6 +718,7 @@ var _currentResults = [];
 function searchYouTube() {
   var query = $('search-input').value.trim();
   if (!query) return;
+  saveSearchHistory(query);
   genreRadioQuery = null; // clear genre radio when user searches manually
   $('search-results').innerHTML = '<div class="loading-state">Searching\u2026</div>';
   $('search-suggestions').innerHTML = '';
@@ -805,6 +811,7 @@ function songCard(s) {
     '</div>' +
     '<div class="card-actions">' +
     '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
+    '<button class="btn-card" data-song="' + ds + '" onclick="addPlayNext(JSON.parse(this.dataset.song))" title="Play next"><span class="material-symbols-outlined">queue_play_next</span></button>' +
     '<button class="btn-card btn-fav-card' + (fav ? ' fav-active' : '') + '" data-song="' + ds + '" onclick="addFavorite(JSON.parse(this.dataset.song))" title="Favorite">' + (fav ? '&#9829;' : '&#9825;') + '</button>' +
     '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
     '</div></div>';
@@ -869,6 +876,7 @@ function favCard(s) {
     '</div>' +
     '<div class="card-actions">' +
     '<button class="btn-card btn-card-play" data-song="' + ds + '" onclick="playSong(JSON.parse(this.dataset.song))"><span class=\"material-symbols-outlined\">play_arrow</span></button>' +
+    '<button class="btn-card" data-song="' + ds + '" onclick="addPlayNext(JSON.parse(this.dataset.song))" title="Play next"><span class="material-symbols-outlined">queue_play_next</span></button>' +
     '<button class="btn-card" data-song="' + ds + '" onclick="showAddToPlaylist(JSON.parse(this.dataset.song))">+ List</button>' +
     '<button class="btn-card btn-danger" data-vid="' + esc(s.videoId) + '" onclick="removeFavorite(this.dataset.vid)"><span class=\"material-symbols-outlined\">delete</span></button>' +
     '</div>' +
@@ -1250,3 +1258,139 @@ function toggleVideoExpand() {
     }
   });
 })();
+
+
+// ── Seek Drag ────────────────────────────────────────────────────────────────
+var _seekDragging = false;
+function startSeekDrag(e) {
+  _seekDragging = true;
+  seekTo(e);
+  document.body.classList.add('seeking');
+  e.preventDefault();
+}
+document.addEventListener('mousemove', function(e) {
+  if (!_seekDragging) return;
+  seekTo(e);
+});
+document.addEventListener('mouseup', function() {
+  if (!_seekDragging) return;
+  _seekDragging = false;
+  document.body.classList.remove('seeking');
+});
+
+// ── Clear Queue ──────────────────────────────────────────────────────────────
+function clearQueue() {
+  queue = []; queueIndex = -1; genreRadioQuery = null;
+  crossfadeActive = false; crossfadeStarted = false;
+  if (crossfadeTimer) { clearInterval(crossfadeTimer); crossfadeTimer = null; }
+  if (ytPlayer && ytPlayer.stopVideo) { try { ytPlayer.stopVideo(); } catch(e2) {} }
+  clearInterval(progressInterval);
+  $('player-bar').style.display = 'none';
+  document.body.classList.remove('player-active');
+  currentSong = null;
+  renderQueueList();
+  showToast('Queue cleared');
+}
+
+// ── Play Next ────────────────────────────────────────────────────────────────
+function addPlayNext(song) {
+  if (!queue.length || queueIndex < 0) { playSong(song); return; }
+  queue.splice(queueIndex + 1, 0, song);
+  renderQueueList();
+  showToast('Plays next: ' + (song.title || '').slice(0, 25));
+}
+function queuePlayNext(i) {
+  if (i === queueIndex) return;
+  var song = queue.splice(i, 1)[0];
+  if (i < queueIndex) queueIndex--;
+  queue.splice(queueIndex + 1, 0, song);
+  renderQueueList();
+  showToast('Plays next');
+}
+
+// ── Queue Drag Reorder ───────────────────────────────────────────────────────
+var _dragQueueIdx = -1;
+function queueDragStart(i) { _dragQueueIdx = i; }
+function queueDragOver(e, i) {
+  document.querySelectorAll('.queue-item').forEach(function(el) { el.classList.remove('queue-item-drag-over'); });
+  var items = document.querySelectorAll('.queue-item');
+  if (items[i]) items[i].classList.add('queue-item-drag-over');
+}
+function queueDragEnd() {
+  _dragQueueIdx = -1;
+  document.querySelectorAll('.queue-item').forEach(function(el) { el.classList.remove('queue-item-drag-over'); });
+}
+function queueDrop(targetIdx) {
+  var from = _dragQueueIdx;
+  if (from < 0 || from === targetIdx) { queueDragEnd(); return; }
+  var moved = queue.splice(from, 1)[0];
+  var to = from < targetIdx ? targetIdx - 1 : targetIdx;
+  queue.splice(to, 0, moved);
+  if (from === queueIndex) { queueIndex = to; }
+  else if (from < queueIndex && to >= queueIndex) { queueIndex--; }
+  else if (from > queueIndex && to <= queueIndex) { queueIndex++; }
+  _dragQueueIdx = -1;
+  renderQueueList();
+}
+
+// ── Search History ───────────────────────────────────────────────────────────
+var _searchHistory = (function() {
+  try { return JSON.parse(localStorage.getItem('_sh') || '[]'); } catch(e) { return []; }
+})();
+function saveSearchHistory(query) {
+  _searchHistory = [query].concat(_searchHistory.filter(function(q) { return q !== query; })).slice(0, 8);
+  try { localStorage.setItem('_sh', JSON.stringify(_searchHistory)); } catch(e) {}
+}
+function showSearchHistory() {
+  var box = $('search-history');
+  if (!box) return;
+  if (!_searchHistory.length) { box.style.display = 'none'; return; }
+  var q = ($('search-input') || {}).value || '';
+  if (q.trim()) { box.style.display = 'none'; return; }
+  box.innerHTML = _searchHistory.map(function(h) {
+    return '<div class="sh-item" onmousedown="useSearchHistory(this.dataset.q)" data-q="' + esc(h) + '">' +
+      '<span class="material-symbols-outlined sh-icon">history</span>' +
+      '<span class="sh-text">' + esc(h) + '</span>' +
+      '</div>';
+  }).join('') + '<div class="sh-clear" onmousedown="clearSearchHistory()">Clear history</div>';
+  box.style.display = 'block';
+}
+function hideSearchHistory() {
+  var box = $('search-history');
+  if (box) box.style.display = 'none';
+}
+function useSearchHistory(query) {
+  var inp = $('search-input');
+  if (inp) inp.value = query;
+  hideSearchHistory();
+  searchYouTube();
+}
+function clearSearchHistory() {
+  _searchHistory = [];
+  try { localStorage.removeItem('_sh'); } catch(e) {}
+  hideSearchHistory();
+}
+
+// ── Colour-Extracted Player Background ──────────────────────────────────────
+function extractPlayerColor(thumbSrc) {
+  if (!thumbSrc) return;
+  var pb = $('player-bar');
+  if (!pb) return;
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = 8; canvas.height = 8;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 8, 8);
+      var d = ctx.getImageData(0, 0, 8, 8).data;
+      var r = 0, g = 0, b = 0, n = 0;
+      for (var i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
+      pb.style.setProperty('--player-accent-rgb', r + ',' + g + ',' + b);
+    } catch(e) { pb.style.removeProperty('--player-accent-rgb'); }
+  };
+  img.onerror = function() { pb.style.removeProperty('--player-accent-rgb'); };
+  img.src = thumbSrc;
+}
