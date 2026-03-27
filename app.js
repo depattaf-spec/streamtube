@@ -1217,4 +1217,7 @@ function toggleVideoExpand() {
   }
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.body.classList.contains('video-expanded')) {
-      document.body.toggleVideoExpand();)();
+      toggleVideoExpand();
+    }
+  });
+})();
