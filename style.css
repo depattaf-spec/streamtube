@@ -1366,6 +1366,16 @@ html, body {
 }
 #yt-thumb:hover .yt-expand-hint { opacity: 1; }
 
+#video-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+body.video-expanded #video-overlay {
+  display: none;
+}
+
 #video-backdrop {
   display: none;
   position: fixed;
