@@ -250,13 +250,26 @@ function onPlayerStateChange(event) {
 
 function onPlayerError(event) {
   clearStartupWatchdog();
+  clearTimeout(_errorSkipTimer); // prevent double-fire if error fires twice
+  var isEmbedBlocked = (event.data === 101 || event.data === 150);
   // 2=invalid id, 5=HTML5 error, 100=not found/private, 101/150=embed disabled
   var msg = (event.data === 100) ? 'Video not found or private' :
-            (event.data === 101 || event.data === 150) ? 'Embedding not allowed' :
+            isEmbedBlocked ? 'Embedding not allowed' :
             'Playback error';
   showToast(msg + ' — skipping…');
   $('play-pause-btn').innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
-  _errorSkipTimer = setTimeout(function() { advanceQueue(1); }, 1800);
+  // Mark current song as unavailable and update any visible cards
+  if (currentSong && currentSong.videoId) {
+    window._unavailableIds[currentSong.videoId] = true;
+    document.querySelectorAll('[data-vid="' + currentSong.videoId + '"]').forEach(function(c) {
+      c.classList.add('song-unavailable');
+    });
+  }
+  if (isEmbedBlocked) {
+    advanceQueue(1); // skip immediately — no need to wait for embed-disabled
+  } else {
+    _errorSkipTimer = setTimeout(function() { advanceQueue(1); }, 1800);
+  }
 }
 
 var _startupWatchdog = null;
@@ -728,6 +741,22 @@ function searchYouTube() {
         '<button class="btn btn-sm-ghost" onclick="shuffleAllResults()"><span class=\"material-symbols-outlined\">shuffle</span> Shuffle All</button>' +
         '</div></div><div class="songs-grid">' + songs.map(function(s) { return songCard(s); }).join('') + '</div>';
       loadSearchSuggestions(query);
+      // Background availability check — mark embed-disabled songs in results
+      (function(ids) {
+        fetch('/api/check?ids=' + ids)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var avail = data.available || {};
+            Object.keys(avail).forEach(function(id) {
+              if (!avail[id]) {
+                window._unavailableIds[id] = true;
+                document.querySelectorAll('[data-vid="' + id + '"]').forEach(function(card) {
+                  card.classList.add('song-unavailable');
+                });
+              }
+            });
+          }).catch(function() {});
+      })(songs.map(function(s) { return s.videoId; }).join(','));
     })
     .catch(function(err) {
       console.error(err);
