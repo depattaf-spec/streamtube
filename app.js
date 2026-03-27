@@ -1037,6 +1037,7 @@ function shufflePlaylist(i) {
 
 function removeSongFromPlaylist(pi, si) {
   var ud = getUserData();
+  if (!ud.playlists || !ud.playlists[pi] || !ud.playlists[pi].songs || si < 0 || si >= ud.playlists[pi].songs.length) return;
   ud.playlists[pi].songs.splice(si, 1);
   saveUserData(ud);
   viewPlaylist(pi);
